@@ -154,7 +154,7 @@ class Multipole(Simbase):
             self._s.contact_vertices(n_verts=16)
 
     @property
-    def interaction(self) -> hoomd.md.pair.Pair:
+    def interaction(self):
         """
         :return: the current particle-particle interaction used in the simulation, which is a `hoomd.md.pair.Pair <https://hoomd-blue.readthedocs.io/en/stable/hoomd/md/pair/pair.html>`_ object
         :rtype: `hoomd.md.pair.Pair <https://hoomd-blue.readthedocs.io/en/stable/hoomd/md/pair/pair.html>`_
@@ -162,15 +162,16 @@ class Multipole(Simbase):
         return self._Uij
 
     @interaction.setter
-    def interaction(self, pair_potential:hoomd.md.pair.Pair):
+    def interaction(self, pair_potential):
         """
         :param pair_potential: the particle-particle interaction to be used in the simulation, which must be a `hoomd.md.pair.Pair <https://hoomd-blue.readthedocs.io/en/stable/hoomd/md/pair/pair.html>`_ object
         :type pair_potential: `hoomd.md.pair.Pair <https://hoomd-blue.readthedocs.io/en/stable/hoomd/md/pair/pair.html>`_
         """
+        assert isinstance(pair_potential, hoomd.md.pair.Pair), "interaction must be a hoomd.md.pair.Pair object"
         self._Uij = pair_potential
 
     @property
-    def methods(self) -> list[hoomd.md.methods.Method]:
+    def methods(self):
         """
         :return: the current integration method used in the simulation, which is a `hoomd.md.methods.Method <https://hoomd-blue.readthedocs.io/en/stable/hoomd/md/methods/method.html>`_ object and defaults to Brownian Dynamics with this object's current settings for translational and rotational diffusivity.
         :rtype: a list of `hoomd.md.methods.Method <https://hoomd-blue.readthedocs.io/en/stable/hoomd/md/methods/method.html>`_ objects
@@ -190,11 +191,12 @@ class Multipole(Simbase):
         return methods
 
     @methods.setter
-    def methods(self, methods:hoomd.md.methods.Method|list[hoomd.md.methods.Method]):
+    def methods(self, methods):
         """
         :param methods: the particle integration methods to be used in the simulation
         :type methods: `hoomd.md.methods.Method <https://hoomd-blue.readthedocs.io/en/stable/hoomd/md/methods/method.html>`_ or a list thereof
         """
+        assert isinstance(methods, hoomd.md.methods.Method) or (isinstance(methods,list) and all([isinstance(m,hoomd.md.methods.Method) for m in methods])), "methods must be a hoomd.md.methods.Method object or a list of such objects"
         self._alt_methods = methods
 
     @property
