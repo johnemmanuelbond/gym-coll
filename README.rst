@@ -1,5 +1,5 @@
-SMRL
-====
+gym-coll
+========
 
 .. description.rst
 

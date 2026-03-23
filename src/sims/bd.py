@@ -12,10 +12,20 @@ Particles in a multipolar electode experience a harmonic confining force which d
 
 It is simple to use the :py:mod:`pchem.units <pchem.units>` module with a set a set of experimental conditions to convert from these simulation units back to experimentally accessible micrometers, kelvin, and volts. Namely, the field strength is a simple monotonic function of the voltage. So converting an applied voltage, and so calculating the correct field strength to use in simulation units is a simple as a function call from :py:mod:`pchem.units <pchem.units>`.
 """
-import numpy as np
 
-import hoomd
+import numpy as np
 import gsd.hoomd
+
+import importlib.util
+has_hoomd = False
+try:
+    spec = importlib.util.find_spec('hoomd')
+    if spec is not None:
+        has_hoomd=True
+except ModuleNotFoundError:
+    has_hoomd = False
+    raise Warning("hoomd not found, sims.bd module will not work. Install hoomd-blue to use this module.")
+if not has_hoomd: import hoomd
 
 from sims import Simbase
 from utils import SuperEllipse, Electrodes, random_frame

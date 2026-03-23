@@ -3,19 +3,35 @@ Simulations
 
 Create simulation objects which inherit from :py:class:`Simbase <sims.base.Simbase>` and can be passed into :doc:`environments <envs>`.
 
-**Base Class:**
+Base Class
+----------
 
-.. autoclass:: sims.base.Simbase
+.. automodule:: sims.base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+HPMC module
+-----------
+
+.. automodule:: sims.hpmc
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+BD module
+---------
+
+.. automodule:: sims.bd
    :members:
    :undoc-members:
    :show-inheritance:
 
 
-.. toctree::
-   :maxdepth: 2
-   :caption: simulation modules
+LDLD module
+-----------
 
-   hpmc
-   bd
-   ldld
-
+.. automodule:: sims.ldld
+   :members:
+   :undoc-members:
+   :show-inheritance:
