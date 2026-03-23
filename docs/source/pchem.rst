@@ -1,18 +1,10 @@
 pchem package
 =============
 
-pchem.order module
-------------------
+units module
+------------
 
-.. automodule:: pchem.order
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-pchem.units module
-------------------
-
-.. automodule:: pchem.units
+.. automodule:: sims.units
    :members:
    :undoc-members:
    :show-inheritance:

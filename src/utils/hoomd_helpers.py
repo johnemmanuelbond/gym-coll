@@ -6,7 +6,17 @@ import numpy as np
 from scipy.spatial.distance import squareform, pdist
 
 import gsd.hoomd
-import hoomd
+
+import importlib.util
+has_hoomd = False
+try:
+    spec = importlib.util.find_spec('hoomd')
+    if spec is not None:
+        has_hoomd=True
+except ModuleNotFoundError:
+    has_hoomd = False
+    raise Warning("hoomd not found, sims.bd module will not work. Install hoomd-blue to use this module.")
+if not has_hoomd: import hoomd
 
 from .geometry import SuperEllipse
 
