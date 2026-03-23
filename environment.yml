@@ -1,0 +1,15 @@
+name: gym-hoomd
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - gsd
+  - numpy
+  - scipy
+  - openmpi
+  - gymnasium=1.0
+  - sphinx
+  - sphinx-rtd-theme
+  - pip
+  - sphinx-book-theme
+  - sphinxcontrib-video

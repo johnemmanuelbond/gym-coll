@@ -8,7 +8,5 @@ Documentation
    sims
    envs
    wrappers
-   tab
-   approx
    pchem
    utils
