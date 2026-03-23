@@ -7,31 +7,31 @@ Base Class
 ----------
 
 .. automodule:: sims.base
-   :members:
-   :undoc-members:
-   :show-inheritance:
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
 HPMC module
 -----------
 
 .. automodule:: sims.hpmc
-   :members:
-   :undoc-members:
-   :show-inheritance:
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
 BD module
 ---------
 
 .. automodule:: sims.bd
-   :members:
-   :undoc-members:
-   :show-inheritance:
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
 
 LDLD module
 -----------
 
 .. automodule:: sims.ldld
-   :members:
-   :undoc-members:
-   :show-inheritance:
+    :members:
+    :undoc-members:
+    :show-inheritance:
