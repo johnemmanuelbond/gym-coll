@@ -8,7 +8,7 @@ A group of simuation classes meant for simulating quasi-2D ensembles of hard col
 
 Brownian dynamics is able to simulate "soft" colloidal particles which interact through chemical physics like electrostatic double layers. So while these classes use the :py:class:`SuperEllipse <utils.geometry.SuperEllipse>` class to represent numerous particle geometries including spheres, ellipses, rectangles, and rhombuses, they also involve force-fields from the `hoomd.md.pair <https://hoomd-blue.readthedocs.io/en/stable/hoomd/md/module-pair.html>`_ module.
 
-Particles in a multipolar electode experience a harmonic confining force which drives particles towards the center of the electode: :math:`U=\\frac{{1}}{{2}}kx^2`. We characterize this harmonic confinement with a 'spring constant', 'quadratic coeffecient', 'harmonic trap strength', 'field-strength', etc given by :math:`k`, with units :math:`[kT]`. Negative field strengths correspond to driving the particles towards the electrode edges. This module makes heavy use of the :py:class:`Electrodes <utils.hoomd_helpers.Electrodes>` class to translate field strengths along sets of arbitrary directions into actionable hoomd calls. To properly use this module, ensure that the linked version of hoomd has the `ExternalFieldHarmonic.h` C++ header modifed as shown in the hoomd-mods/hoomd-v5-npole subdirectory of the SMRL repository.
+Particles in a multipolar electode experience a harmonic confining force which drives particles towards the center of the electode: :math:`U=\\frac{{1}}{{2}}kx^2`. We characterize this harmonic confinement with a 'spring constant', 'quadratic coeffecient', 'harmonic trap strength', 'field-strength', etc given by :math:`k`, with units :math:`[kT]`. Negative field strengths correspond to driving the particles towards the electrode edges. This module makes heavy use of the :py:class:`Electrodes <utils.hoomd_helpers.Electrodes>` class to translate field strengths along sets of arbitrary directions into actionable hoomd calls. To properly use this module ... WIP: separate fields repository
 
 It is simple to use the :py:mod:`pchem.units <pchem.units>` module with a set a set of experimental conditions to convert from these simulation units back to experimentally accessible micrometers, kelvin, and volts. Namely, the field strength is a simple monotonic function of the voltage. So converting an applied voltage, and so calculating the correct field strength to use in simulation units is a simple as a function call from :py:mod:`pchem.units <pchem.units>`.
 """
@@ -25,7 +25,7 @@ try:
 except ModuleNotFoundError:
     has_hoomd = False
     raise Warning("hoomd not found, sims.bd module will not work. Install hoomd-blue to use this module.")
-if not has_hoomd: import hoomd
+if has_hoomd: import hoomd
 
 from sims import Simbase
 from utils import SuperEllipse, Electrodes, random_frame

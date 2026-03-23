@@ -8,5 +8,4 @@ Documentation
    sims
    envs
    wrappers
-   pchem
    utils

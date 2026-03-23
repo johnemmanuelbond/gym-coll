@@ -1,8 +1,8 @@
-utils package
-=============
+utils module
+============
 
-utils.geometry module
----------------------
+geometry sunmodule
+-------------------
 
 .. automodule:: utils.geometry
    :members:
@@ -10,18 +10,26 @@ utils.geometry module
    :show-inheritance:
 
 
-utils.hoomd_helpers module
---------------------------
+hoomd_helpers submodule
+-----------------------
 
 .. automodule:: utils.hoomd_helpers
    :members:
    :undoc-members:
    :show-inheritance:
 
-utils.gym_spaces module
------------------------
+gym_spaces submodule
+--------------------
 
 .. automodule:: utils.gym_spaces
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+units submodule
+---------------
+
+.. automodule:: utils.units
    :members:
    :undoc-members:
    :show-inheritance:

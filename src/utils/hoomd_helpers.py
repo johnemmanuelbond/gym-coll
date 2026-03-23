@@ -16,7 +16,7 @@ try:
 except ModuleNotFoundError:
     has_hoomd = False
     raise Warning("hoomd not found, sims.bd module will not work. Install hoomd-blue to use this module.")
-if not has_hoomd: import hoomd
+if has_hoomd: import hoomd
 
 from .geometry import SuperEllipse
 

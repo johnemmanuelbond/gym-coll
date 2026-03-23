@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-The base class for colloidal simulations within the SMRL framework.
+The base class for colloidal simulations within the gym-coll framework.
 
 Simulations use chemical physics to evolve a configuration of particles (or representation therof). A simulation must be able to run (i.e. evolve the state) and reset (return to initial conditions) for use within a gymnasium environment. 
 

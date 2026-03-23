@@ -21,7 +21,7 @@ from gymnasium import spaces
 
 from sims import base
 
-class obsD_actD(gym.Env):
+class Discrete(gym.Env):
     """An environment with a discrete observation space and a discrete action space. The dimensionality of the observation space and the underlying simulation must match. Additionally, provide a mapping for action which correspond to discrete indices in the action space.
 
     :param sim: An arbitrary simulation object
@@ -165,7 +165,7 @@ class obsD_actD(gym.Env):
 
 
 
-class obsC_actD(gym.Env):
+class Semidiscrete(gym.Env):
     """An environment with a continuous observation space and a discrete action space. The dimensionality of the observation space and the underlying simulation must match. Additionally, provide a mapping for action which correspond to discrete indices in the action space.
 
     :param sim: An arbitrary simulation object
@@ -292,7 +292,7 @@ class obsC_actD(gym.Env):
 
 
 
-class obsC_actC(gym.Env):
+class Continuous(gym.Env):
     """An environment with a continuous observation space and a discrete action space. The dimensionality of the observation space and the underlying simulation must match. The action space should span the space of physical actions (no indexing).
 
     :param sim: An arbitrary simulation object
