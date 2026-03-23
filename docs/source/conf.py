@@ -12,7 +12,7 @@ sys.path.insert(3,'../../src')
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'SMRL'
+project = 'gym-coll'
 copyright = '2026, John E. Bond'
 author = 'John E. Bond'
 release = '1.0.0'

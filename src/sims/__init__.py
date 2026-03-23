@@ -3,8 +3,8 @@ from . import base, hpmc, bd, ldld
 
 from .base import Simbase
 
-from . import hpmc.Multipole, hpmc.Quadrupole, hpmc.Colplanar
+from .hpmc import Multipole, Quadrupole, Coplanar
 
-from . import bd.Multipole, bd.Quadrupole, bd.Colplanar
+from .bd import Multipole, Quadrupole, Coplanar
 
 from .ldld import General_1D, General_ND
