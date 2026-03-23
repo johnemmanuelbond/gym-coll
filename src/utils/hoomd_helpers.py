@@ -283,7 +283,7 @@ class Electrodes:
     
     def make_logger(self,k_trans:list|np.ndarray=None,
                     k_rot:list|np.ndarray=None,
-                    direct:list|np.ndarray=None)->hoomd.logging.Logger:
+                    direct:list|np.ndarray=None):
         """creates a `logging <https://hoomd-blue.readthedocs.io/en/latest/hoomd/module-logging.html>`_ object so that simulations write the field configuration to `gsd <https://gsd.readthedocs.io/en/stable/index.html>`_ files. This way scripts which read these files can create :py:class:`Electrodes` objects for recreating simulation objects or rendering energy landscapes.
 
         :param k_trans: sets the translational field strengths in kT units constraining particles along each multipole axis, defaults to None
@@ -307,7 +307,7 @@ class Electrodes:
         return action_log
 
 
-def hoomd_dlvo(debye_length:float, energy_scale:float, buffer_size:float=0.4) -> hoomd.md.pair.Pair:
+def hoomd_dlvo(debye_length:float, energy_scale:float, buffer_size:float=0.4):
     """
     Creates a `hoomd.md.pair.DLVO <https://hoomd-blue.readthedocs.io/en/stable/hoomd/md/pair/dlvo.html>`_ object with the given debye length and energy scale. The DLVO interaction is a screened electrostatic potential for simulating charged colloids in an electrolyte. This interation has the form:
 
@@ -334,7 +334,7 @@ def hoomd_dlvo(debye_length:float, energy_scale:float, buffer_size:float=0.4) ->
     return dlvo
 
 
-def capped_dlvo(debye_length:float, energy_scale:float, buffer_size:float=0.4, force_cap:float|None=None) -> hoomd.md.pair.Pair:
+def capped_dlvo(debye_length:float, energy_scale:float, buffer_size:float=0.4, force_cap:float|None=None):
     """
     Creates a `hoomd.md.pair.Table <https://hoomd-blue.readthedocs.io/en/stable/hoomd/md/pair/table.html>`_ object with the given debye length and energy scale. The DLVO interaction is a screened electrostatic potential for simulating charged colloids in an electrolyte, but sometimes generates impractically large forces and thus displacements. Therefore, this method creates a tabular potential where high forces are clipped to keep simulations running smoothely. However, using this method may result in occasional overlapping particles.
     
@@ -369,7 +369,7 @@ def capped_dlvo(debye_length:float, energy_scale:float, buffer_size:float=0.4, f
     return dlvo
 
 
-def hoomd_wca(length_scale:float, energy_scale:float, buffer_size:float=0.4) -> hoomd.md.pair.Pair:
+def hoomd_wca(length_scale:float, energy_scale:float, buffer_size:float=0.4):
     """Creates a `hoomd.md.pair.LJ <https://hoomd-blue.readthedocs.io/en/stable/hoomd/md/pair/lj.html>`_ object with the given length scale and energy scale. This Lennard-Jones interaction is trucated to the Weeks-Chandler-Anderson form for purely repuslive particles. This interaction has the form:
 
     .. math::
@@ -394,7 +394,7 @@ def hoomd_wca(length_scale:float, energy_scale:float, buffer_size:float=0.4) -> 
     return wca
 
 
-def hoomd_alj(shape:SuperEllipse, energy_scale:float, buffer_size:float=0.4, **kwargs) -> hoomd.md.pair.Pair:
+def hoomd_alj(shape:SuperEllipse, energy_scale:float, buffer_size:float=0.4, **kwargs):
     """Creates a `hoomd.md.pair.aniso.ALJ <https://hoomd-blue.readthedocs.io/en/stable/hoomd/md/pair/aniso.html#hoomd.md.pair.aniso.ALJ>`_ object with the given shape and energy scale. The Anisotropic Lennard-Jones interaction is a generalization of the Lennard-Jones interaction to arbitrary shapes. This interaction has the form:
 
     .. math::

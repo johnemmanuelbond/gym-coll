@@ -2,8 +2,7 @@ Documentation
 =============
 
 .. toctree::
-   :maxdepth: 3
-   :caption: Packages
+   :maxdepth: 2
    
    sims
    envs
