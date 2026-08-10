@@ -1,14 +1,32 @@
 # -*- coding: utf-8 -*-
 """
-Multiple classes for general low-dimensional langevin dynamics (LDLD) simulations. In LDLD simulations a low-dimensional vector of order parameters defines the state of a system. Defining the free energy over low-D space provides a driving force to evolve the state through low-D space. Defining the diffusion tensor over low-D space provides a drag force to evolve the state through low-D space. These two forces, plus a thermalized random force, provide the basis for a low-dimensional equation of motion with which to model, then characterize, dynamics.
+Multiple classes for general low-dimensional langevin dynamics (LDLD) simulations. In LDLD simulations 
+a low-dimensional vector of order parameters defines the state of a system. Defining the free energy 
+over low-D space provides a driving force to evolve the state through low-D space. Defining the diffusion 
+tensor over low-D space provides a drag force to evolve the state through low-D space. These two forces, 
+plus a thermalized random force, provide the basis for a low-dimensional equation of motion with which 
+to model, then characterize, dynamics.
 
-There are various ways to define the FEL (free energy landscape) and the DL (diffusion landscape). In the simplest formulation  constant scalar diffusion is sufficient to capture dynamics, and only the bottom 5kT of a quadratic FEL is necessary. However, this module supports more complex formulations and can generally support any callable FEL and DL.
+There are various ways to define the FEL (free energy landscape) and the DL (diffusion landscape). In 
+the simplest formulation  constant scalar diffusion is sufficient to capture dynamics, and only the 
+bottom 5kT of a quadratic FEL is necessary. However, this module supports more complex formulations 
+and can generally support any callable FEL and DL.
 
-Unit definitions for LDLD require some explanation. Energy units are always defined by :math:`kT`, the thermal energy scale, however length and time units are LDLD units are often abstract and heavily user defined.
+Unit definitions for LDLD require some explanation. Energy units are always defined by :math:`kT`, 
+the thermal energy scale, however length and time units are LDLD units are often abstract and 
+heavily user defined.
 
-The LDLD module may be used to simulate particles directly, in which case length and time units can be particle diameters (:math:`2a`) and mean free times (:math:`\\tau`) or, more directly, nanometers and seconds. In these cases diffusion landscapes are specified in length squared per time units as usual.
+The LDLD module may be used to simulate particles directly, in which case length and time units 
+can be particle diameters (:math:`2a`) and mean free times (:math:`\\tau`) or, more directly, 
+nanometers and seconds. In these cases diffusion landscapes are specified in length squared per 
+time units as usual.
 
-However, LDLD is more commonly used to simulate (unitless) order parameter evolution, in which case there *is no* length unit, and consequently the diffusion landscape must only have inverse time units. This more abstract diffusion landscape, in turn, defines the time unit for LDLD. Since order parameter diffusion landscapes are most often measured (as opposed to defined *a priori*), the time unit of an LDLD simulation most often refers to the time unit of whatever experiment or simulation generated its diffusion landscape.
+However, LDLD is more commonly used to simulate (unitless) order parameter evolution, in which 
+case there *is no* length unit, and consequently the diffusion landscape must only have inverse 
+time units. This more abstract diffusion landscape, in turn, defines the time unit for LDLD. 
+Since order parameter diffusion landscapes are most often measured (as opposed to defined *a priori*), 
+the time unit of an LDLD simulation most often refers to the time unit of whatever experiment 
+or simulation generated its diffusion landscape.
 
 WIP: add source(s)
 """
@@ -19,7 +37,7 @@ from sims import Simbase
 
 
 
-class General_1D(Simbase):
+class OneDim(Simbase):
     """
     Evolves a one-dimensional coordinate, :math:`x(t)` according to the langevin equation:
 
@@ -188,7 +206,7 @@ class General_1D(Simbase):
 
 
 
-class General_ND(Simbase):
+class AnyDim(Simbase):
     """
     Evolves a d-dimensional coordinate, :math:`\\mathbf{x}(t)` according to the langevin equation in d dimensions:
 

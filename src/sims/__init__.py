@@ -1,5 +1,7 @@
 """Module src/sims/__init__.py."""
 
-from .base import Simbase
+from .base import Simbase, HoomdColloid
 
-from . import hpmc, bd, ldld
+from .mc import DynamicMonteCarlo
+from .bd import BrownianDynamics
+from .ldld import OneDim, AnyDim

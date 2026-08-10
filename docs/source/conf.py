@@ -30,16 +30,14 @@ extensions = extensions = [
 templates_path = ['_templates']
 exclude_patterns = []
 
-autodoc_member_order = 'bysource'
+autodoc_member_order = 'groupwise'
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = 'sphinx_book_theme'
 html_static_path = ['_static']
-html_css_files = [
-    'twocol.css',
-]
+html_css_files = []
 
 html_theme_options = {
     "repository_url": "https://github.com/johnemmanuelbond/gym-coll",

@@ -66,3 +66,16 @@ Uninstall with
 .. _gsd: https://gsd.readthedocs.io/en/latest/
 .. _installing hoomd-blue: https://hoomd-blue.readthedocs.io/en/latest/building.html
 .. _freud: https://freud.readthedocs.io/en/latest/gettingstarted/installation.html
+
+TODO
+****
+
+gym-coll is still in development. Here is an abbreviated todo list for the devs
+
+1. Fix HPMC so we don't need to constantly call `mc.integrator=None` to reset the type lists in the integrator
+
+2. Decide whether to add `expts` package and subpackages for specifc, paper-related, RL projects
+
+3. Organize and finalize wrappers module.
+
+4. Pare down utils module to only do what's neeed.

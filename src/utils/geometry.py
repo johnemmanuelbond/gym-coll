@@ -146,7 +146,7 @@ class SuperEllipse():
             # idx = np.unique(np.array([*idx,*corner_idx]))
 
         self.vertices = np.array([shell[idx][:,0],shell[idx][:,1],np.zeros_like(idx)]).T
-        self.core_radius = 2*self.ay*(1-contact_ratio)
+        self.core_radius = self.ay*(1-contact_ratio)
         self.contact_ratio = contact_ratio
         self.outsphere = 2*np.linalg.norm(pts,axis=-1).max()
 

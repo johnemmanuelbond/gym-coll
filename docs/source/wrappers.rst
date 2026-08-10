@@ -1,8 +1,8 @@
 Environment Wrapppers
 =====================
 
-wrappers.wrappers module
-------------------------
+wrappers module
+---------------
 
 .. automodule:: wrappers.wrappers
     :members:

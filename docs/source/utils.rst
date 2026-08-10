@@ -25,11 +25,3 @@ gym_spaces submodule
     :members:
     :undoc-members:
     :show-inheritance:
-
-units submodule
----------------
-
-.. automodule:: utils.units
-    :members:
-    :undoc-members:
-    :show-inheritance:

@@ -61,10 +61,10 @@ class Discrete(gym.Env):
         self.observation_space = observation_space
 
         if isinstance(observation_space, spaces.Discrete):
-            assert sim.dims == 1, "Simulation dimensions must match observation space"
+            assert sim.state_dim == 1, "Simulation dimensions must match observation space"
         else:
             assert len(observation_space.shape) == 1, "observation space must have at most rank 1"
-            assert sim.dims == observation_space.shape[0], "Simulation dimensions must match observation space"
+            assert sim.state_dim == observation_space.shape[0], "Simulation dimensions must match observation space"
         
         assert action_space.n == len(action_set), "Set of actions must have same shape as action space"
         
@@ -89,7 +89,7 @@ class Discrete(gym.Env):
         :rtype: int | ndarray
         """        
 
-        if self.sim.dims==1:
+        if self.sim.state_dim==1:
             n = self.observation_space.n
             op = self.sim.state[0]
             obs = min(int(op * n),n-1)
@@ -205,7 +205,7 @@ class Semidiscrete(gym.Env):
         self.observation_space = observation_space
         
         assert len(observation_space.shape) == 1, "observation space must have at most rank 1"
-        assert sim.dims == observation_space.shape[0], "Simulation dimensions must match observation space"
+        assert sim.state_dim == observation_space.shape[0], "Simulation dimensions must match observation space"
         assert action_space.n == len(action_set), "Set of actions must have same shape as action space"
 
         self._R = lambda_reward
@@ -329,7 +329,7 @@ class Continuous(gym.Env):
         self.observation_space = observation_space
 
         assert len(observation_space.shape) == 1, "observation space must have at most rank 1"
-        assert sim.dims == observation_space.shape[0], "Simulation dimensions must match observation space"
+        assert sim.state_dim == observation_space.shape[0], "Simulation dimensions must match observation space"
 
         self._R = lambda_reward
         self._T = lambda_terminate

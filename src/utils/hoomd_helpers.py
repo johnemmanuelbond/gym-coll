@@ -92,219 +92,30 @@ def random_frame(N:int, W:float, H:float=None,
 
     return frame
 
+def electrode_logger(k_trans:float|list|np.ndarray=None,
+                     k_rot:float|list|np.ndarray=None,
+                     direct:float|list|np.ndarray=None):
+    """creates a `logging <https://hoomd-blue.readthedocs.io/en/latest/hoomd/module-logging.html>`_ object so that simulations write the field configuration to `gsd <https://gsd.readthedocs.io/en/stable/index.html>`_ files. This way scripts which read these files can create :py:class:`Electrodes` objects for recreating simulation objects or rendering energy landscapes.
 
-
-
-class Electrodes:
-    """
-    A class to contain helpful methods for representing electrode geometries, and generating arguments to pass into `hoomd-blue`_ classes. The class represents electrodes as a superposition of nearly harmonic traps. The energy associated with the :math:`i` th one of these traps can be written like:
-
-    .. math::
-
-        U_{{tr,i}} = \\frac{{1}}{{2}}k_{{tr,i}}\\tan^2\\big(r/d_g\\big)\\approx\\frac{{1}}{{2}}k_{{tr,i}}\\big(r/d_g\\big)^2
-
-    .. math::
-
-        U_{{rot,i}} = \\frac{{1}}{{2}}k_{{rot,i}}\\sin^2\\big(m\\Delta\\theta\\big)
-
-    Where :math:`k_{{tr,i}}` and :math:`k_{{rot,i}}` correspond to the :math:`i` th translational and rotational energy scales (in kT units), :math:`d_g` is the distance between the electrodes (in simulation units), and :math:`m` is a symmetry factor corresponding to the particles within the electrode (a rectangle has :math:`m=1`, a square has :math:`m=2`, and a disc has :math:`m=\\infty`). The unitless distance :math:`r` and the angle :math:`\\Delta\\theta` are defined relative to an angle :math:`\\theta_i` which defines the axis along which the harmonic trap drives particle translation, and along which the trap aligns particle orientations:
-
-    .. math::
-        
-        r \\equiv \\vec{{r_p}}\\cdot\\hat{{d}}/d_g= \\frac{{1}}{{d_g}}\\big(x_p\\cos\\theta_i + y_p\\sin\\theta_i\\big)
-
-    .. math::
-
-        \\Delta\\theta \\equiv \\theta_p - \\theta_i
-    
-    Where :math:`x_p`, :math:`y_p`, :math:`\\theta_p` are the position and orientation of a particle within the electrodes.
-
-    A generic field configuraiton can be represented as a superposition of these harmonic traps:
-
-    .. math::
-
-        U_{{tr}} = \\sum_i U_{{tr,i}} \\qquad U_{{rot}} = \\sum_i U_{{rot,i}}
-
-    :param n: number of fields to superimpose, defaults to 2
-    :type n: int, optional
-    :param dg: gap between all sets of electrodes (in simulation units), defaults to 30
-    :type dg: float, optional
+    :param k_trans: sets the translational field strengths in kT units constraining particles along each multipole axis, defaults to None
+    :type k_trans: list | np.ndarray, optional
+    :param k_rot: sets the rotational field strengths in kT units aligning particles along each multipole axis, defaults to None
+    :type k_rot: list | np.ndarray, optional
+    :param direct: sets the direction (in radians) of each multipole axis, defaults to None, defaults to None
+    :type direct: list | np.ndarray, optional
+    :return: a hoomd `logging <https://hoomd-blue.readthedocs.io/en/latest/hoomd/module-logging.html>`_ object to record the field configuration
+    :rtype: `hoomd.logging.Logger <https://hoomd-blue.readthedocs.io/en/latest/hoomd/logging/logger.html#>`_
     """        
-    def __init__(self, n:int=2, dg:float=30):
-        """
-        Constructor
-        """
-        self.k_trans = np.zeros(n)
-        self.k_rot = np.zeros(n)
-        self._dg = dg
-        self.direct = np.linspace(0,np.pi,n,endpoint=False)
+    if not (k_trans is None): self.k_trans = k_trans
+    if not (k_rot is None): self.k_rot = k_rot
+    if not (direct is None): self.direct = direct
 
-    @property
-    def num_fields(self)->int:
-        """
-        :return: number of fields to superimpose
-        :rtype: int
-        """        
-        return len(self.direct)
-
-    @property
-    def electrode_gap(self)->float:
-        """
-        :return: gap between all sets of electrodes
-        :rtype: float
-        """        
-        return self._dg
-    
-    @electrode_gap.setter
-    def electrode_gap(self, dg:float):
-        """
-        :param dg: gap between all sets of electrodes
-        :type dg: float
-        """        
-        self._dg = dg
-
-    def U_trans(self,xs:np.ndarray,ys:np.ndarray,
-                k_trans:list|np.ndarray = None,
-                direct:list|np.ndarray=None)->np.ndarray:
-        """Computes the potential energy of a set of x- and y-positions according to the electrode's current configuration.
-
-        :param xs: a set of x-positions (in simulation length units) to calculate energies at
-        :type xs: np.ndarray
-        :param ys: a set of y-positions (in simulation length units) to calculate energies at
-        :type ys: np.ndarray
-        :param k_trans: sets the translational field strengths in kT units constraining particles along each multipole axis, defaults to None
-        :type k_trans: list | np.ndarray, optional
-        :param direct: sets the direction (in radians) of each multipole axis, defaults to None
-        :type direct: list | np.ndarray, optional
-        :return: a set of potential energies at each x- and y-position 
-        :rtype: np.ndarray
-        """        
-        if not (k_trans is None): self.k_trans = k_trans
-        if not (direct is None): self.direct = direct
-
-        n = len(self.direct)
-        
-        shape = (*(xs.T.shape),n)
-        cs = np.full(shape,np.cos(self.direct)).T
-        ss = np.full(shape,np.sin(self.direct)).T
-        ks = np.full(shape,self.k_trans).T
-
-        shape = (n,*(xs.shape))
-        all_xs = np.full(shape,xs)/self._dg
-        all_ys = np.full(shape,ys)/self._dg
-        rs = all_xs*cs + all_ys*ss
-
-        return np.sum(0.5 * ks * rs**2,axis=0)
-    
-    def U_rot(self,angles:np.ndarray,
-              k_rot:list|np.ndarray = None,
-              direct:list|np.ndarray=None,m:int=1)->np.ndarray:
-        """Computes potential energy of a set of particle orientations according to the electrode's current configuration.
-
-        :param angles: a set of orientations (in radians) to compute potential energies at
-        :type angles: np.ndarray
-        :param k_rot: sets the rotational field strengths in kT units aligning particles along each multipole axis, defaults to None
-        :type k_rot: list | np.ndarray, optional
-        :param direct: sets the direction (in radians) of each multipole axis, defaults to None, defaults to None
-        :type direct: list | np.ndarray, optional
-        :param m: symmetry factor of the particles, defaults to 1
-        :type m: int, optional
-        :return: a set of potential energies at each orientation
-        :rtype: np.ndarray
-        """        
-        if not (k_rot is None): self.k_rot = k_rot
-        if not (direct is None): self.direct = direct
-
-        n = len(self.direct)
-
-        shape = (*(angles.T.shape),n)
-        ks = np.full(shape,self.k_rot).T
-        t0s = np.full(shape,self.direct).T
-        
-        shape = (n,*(angles.shape))
-        all_angles = np.full(shape,angles)
-        ss = np.sin(m*(all_angles - t0s))
-
-        return np.sum(0.5 * ks * ss**2,axis=0)
-
-    def make_npole_MC(self,pnum:int=1,
-                      k_trans:list|np.ndarray=None,
-                      k_rot:list|np.ndarray=None,
-                      direct:list|np.ndarray=None,m:int=1)->dict:
-        """generates the arguments needed to pass the current electrode configuration into hoomd `hpmc <https://hoomd-blue.readthedocs.io/en/latest/hoomd/module-hpmc.html>`_ simulations. To properly use this method, ensure that the linked version of hoomd has the `ExternalFieldHarmonic.h` C++ header modifed as shown in the hoomd-mods/hoomd-v5-npole subdirectory of the SMRL repository.
-
-        :param pnum: number of particles in the hoomd simulation which uses this output (needed to correctly use `hoomd.hpmc.external.Harmonic <https://hoomd-blue.readthedocs.io/en/latest/hoomd/hpmc/external/harmonic.html>`_), defaults to 1
-        :type pnum: int, optional
-        :param k_trans: sets the translational field strengths in kT units constraining particles along each multipole axis, defaults to None
-        :type k_trans: list | np.ndarray, optional
-        :param k_rot: sets the rotational field strengths in kT units aligning particles along each multipole axis, defaults to None
-        :type k_rot: list | np.ndarray, optional
-        :param direct: sets the direction (in radians) of each multipole axis, defaults to None, defaults to None
-        :type direct: list | np.ndarray, optional
-        :param m: symmetry factor of the particles, defaults to 1
-        :type m: int, optional
-        :return: a list of dictionaries which correspond to arguments to be passed into the modified `hoomd.hpmc.external.Harmonic <https://hoomd-blue.readthedocs.io/en/latest/hoomd/hpmc/external/harmonic.html>`_
-        :rtype: dict
-        """        
-        if not (k_trans is None): self.k_trans = k_trans
-        if not (k_rot is None): self.k_rot = k_rot
-        if not (direct is None): self.direct = direct
-
-        sym = np.array([[1,0,0,0]]*int(2*m))
-        self.Harmonic = [dict(reference_positions=self._dg*np.full((pnum,3),[np.cos(o),np.sin(o),0]),
-                     k_translational=kt,
-                     symmetries=sym,
-                     reference_orientations=np.full((pnum,4),[np.cos(o/2),0,0,np.sin(o/2)]),
-                     k_rotational = kr) for kt,kr,o in zip(self.k_trans.copy(),self.k_rot.copy(),self.direct.copy())]
-        return self.Harmonic
-    
-    def make_npole_BD(self,k_trans:list|np.ndarray=None,
-                      k_rot:list|np.ndarray=None,
-                      direct:list|np.ndarray=None,m:int=1)->list[tuple[list]]:
-        """generates the arguments needed to pass the current electrode configuration into hoomd `md <https://hoomd-blue.readthedocs.io/en/latest/hoomd/module-md.html>`_ simulations. To properly use this method, ensure that the linked version of hoomd has the `ActiveForceCompute.cc` C++ file modifed as shown in the hoomd-mods/hoomd-v5-npole subdirectory of the SMRL repository.
-
-        :param k_trans: sets the translational field strengths in kT units constraining particles along each multipole axis, defaults to None
-        :type k_trans: list | np.ndarray, optional
-        :param k_rot: sets the rotational field strengths in kT units aligning particles along each multipole axis, defaults to None
-        :type k_rot: list | np.ndarray, optional
-        :param direct: sets the direction (in radians) of each multipole axis, defaults to None, defaults to None
-        :type direct: list | np.ndarray, optional
-        :param m: symmetry factor of the particles, defaults to 1
-        :type m: int, optional
-        :return: a list of pairs of force and torque vectors which correspond to arguments to be passed into the modified `hoomd.md.force.Active <https://hoomd-blue.readthedocs.io/en/latest/hoomd/md/force/active.html>`_
-        :rtype: list[tuple[list]]
-        """        
-        if not (k_trans is None): self.k_trans = k_trans
-        if not (k_rot is None): self.k_rot = k_rot
-        if not (direct is None): self.direct = direct
-
-        self.Active = [([kt,o,self._dg],[kr,o,m]) for kt, kr, o in zip(self.k_trans.copy(),self.k_rot.copy(),self.direct.copy())]
-        return self.Active
-    
-    def make_logger(self,k_trans:list|np.ndarray=None,
-                    k_rot:list|np.ndarray=None,
-                    direct:list|np.ndarray=None):
-        """creates a `logging <https://hoomd-blue.readthedocs.io/en/latest/hoomd/module-logging.html>`_ object so that simulations write the field configuration to `gsd <https://gsd.readthedocs.io/en/stable/index.html>`_ files. This way scripts which read these files can create :py:class:`Electrodes` objects for recreating simulation objects or rendering energy landscapes.
-
-        :param k_trans: sets the translational field strengths in kT units constraining particles along each multipole axis, defaults to None
-        :type k_trans: list | np.ndarray, optional
-        :param k_rot: sets the rotational field strengths in kT units aligning particles along each multipole axis, defaults to None
-        :type k_rot: list | np.ndarray, optional
-        :param direct: sets the direction (in radians) of each multipole axis, defaults to None, defaults to None
-        :type direct: list | np.ndarray, optional
-        :return: a hoomd `logging <https://hoomd-blue.readthedocs.io/en/latest/hoomd/module-logging.html>`_ object to record the field configuration
-        :rtype: `hoomd.logging.Logger <https://hoomd-blue.readthedocs.io/en/latest/hoomd/logging/logger.html#>`_
-        """        
-        if not (k_trans is None): self.k_trans = k_trans
-        if not (k_rot is None): self.k_rot = k_rot
-        if not (direct is None): self.direct = direct
-    
-        action_log = hoomd.logging.Logger(only_default=False)
-        action_log[('k_trans')] = (lambda: self.k_trans.copy(), 'scalar')
-        action_log[('k_rot')] = (lambda: self.k_rot.copy(), 'scalar')
-        action_log[('direct')] = (lambda: self.direct.copy(), 'scalar')
-        action_log[('dg')] = (lambda: [self._dg], 'scalar')
-        return action_log
+    action_log = hoomd.logging.Logger(only_default=False, categories = ["scalar", "sequence"])
+    action_log[('value','k_trans')] = (lambda: self.k_trans.copy(), 'sequence')
+    action_log[('k_rot')] = (lambda: self.k_rot.copy(), 'sequence')
+    action_log[('direct')] = (lambda: self.direct.copy(), 'sequence')
+    action_log[('dg')] = (lambda: [self._dg], 'scalar')
+    return action_log
 
 
 def hoomd_dlvo(debye_length:float, energy_scale:float, buffer_size:float=0.4):
@@ -364,7 +175,7 @@ def capped_dlvo(debye_length:float, energy_scale:float, buffer_size:float=0.4, f
 
     energies = np.flip(np.cumsum(np.flip(forces)*dr))
     dlvo = hoomd.md.pair.Table(nlist=cell,default_r_cut=cutoff)
-    dlvo.params[('A','A')] = {'r_min':0.0,'U':energies-energies.min(),'F':forces}
+    dlvo.params[('Z','Z')] = {'r_min':0.0,'U':energies-energies.min(),'F':forces}
 
     return dlvo
 
@@ -389,7 +200,7 @@ def hoomd_wca(length_scale:float, energy_scale:float, buffer_size:float=0.4):
     cutoff = (2**(1/6) * length_scale)*nonideal
     cell = hoomd.md.nlist.Cell(buffer=buffer_size)
     wca = hoomd.md.pair.LJ(nlist=cell, default_r_cut=cutoff,mode='shift')
-    wca.params[('A', 'A')] = dict(epsilon=energy_scale,sigma=length_scale)
+    wca.params[('Z', 'Z')] = dict(epsilon=energy_scale,sigma=length_scale)
 
     return wca
 
@@ -414,13 +225,9 @@ def hoomd_alj(shape:SuperEllipse, energy_scale:float, buffer_size:float=0.4, **k
         assert ('contact_radius' in kwargs) and ('n_verts' in kwargs), "must include arguments to make shape vertice if not pre-generated"
         shape.contact_vertices(n_verts=kwargs['n_verts'],contact_ratio=kwargs['contact_radius']/shape.ay)
     
-    if 'contact_radius' in kwargs:
-        alj_contact = kwargs['contact_radius']
-    else:
-        alj_contact = shape.contact_ratio*shape.ay
-    
-    sigma_core = shape.core_radius
+    sigma_core = 2*shape.core_radius
     sigma_out = shape.outsphere
+    alj_contact = shape.contact_ratio*shape.ay*2/sigma_core
 
     nonideal = sigma_core!=0 and energy_scale!=0
     try:
@@ -428,14 +235,18 @@ def hoomd_alj(shape:SuperEllipse, energy_scale:float, buffer_size:float=0.4, **k
     except ZeroDivisionError:
         cutoff = 0
 
+    # lmin = 2.0 ** (1.0/6.0)
+    # suggested_cutoff = max(lmin*sigma_core, outsphere + lmin/2(β i⋅σi +βj ⋅σj))
+    # print(cutoff, suggested_cutoff)
+
+
     cell = hoomd.md.nlist.Cell(buffer=buffer_size)
     alj = hoomd.md.pair.aniso.ALJ(cell, default_r_cut=cutoff)
 
     vertices = shape.vertices.tolist()
     faces = [[i for i,_ in enumerate(vertices)]]
-    alj.shape['A'] = dict(vertices = vertices, faces=faces, rounding_radii=[0.0,0.0,0.0])
-
-    alj.params[('A','A')] = dict(
+    alj.shape['Z'] = dict(vertices = vertices, faces=faces, rounding_radii=[0.0,0.0,0.0])
+    alj.params[('Z','Z')] = dict(
         epsilon = energy_scale,
         sigma_i = sigma_core,
         sigma_j = sigma_core,
@@ -465,56 +276,58 @@ def hpmc_dipoles(shape:SuperEllipse, energy_scale:float):
     d_a = np.arctan(ay/ax/edge_width)
 
     attract = hoomd.hpmc.pair.AngularStep(hoomd.hpmc.pair.Step())
-    attract.isotropic_potential.params[('A','A')] = dict(epsilon=[-energy_scale], r = [r_a])
-    attract.mask[('A','A')] = dict(directors = [(1.0,0.0,0.0), (-1.0,0.0,0.0)], deltas=[d_a]*2)
+    attract.isotropic_potential.params[('Z','Z')] = dict(epsilon=[-energy_scale], r = [r_a])
+    attract.mask[('Z','Z')] = dict(directors = [(1.0,0.0,0.0), (-1.0,0.0,0.0)], deltas=[d_a]*2)
 
     r_r = r_frac*np.sqrt(ay**2 + (ax/edge_width)**2)
     d_r = np.arctan(ax/ay/edge_width)
 
     repel = hoomd.hpmc.pair.AngularStep(hoomd.hpmc.pair.Step())
-    repel.isotropic_potential.params[('A','A')] = dict(epsilon=[energy_scale], r = [r_r])
-    repel.mask[('A','A')] = dict(directors = [(0.0,1.0,0.0), (0.0,-1.0,0.0)], deltas=[d_r]*2)
+    repel.isotropic_potential.params[('Z','Z')] = dict(epsilon=[energy_scale], r = [r_r])
+    repel.mask[('Z','Z')] = dict(directors = [(0.0,1.0,0.0), (0.0,-1.0,0.0)], deltas=[d_r]*2)
 
     return attract, repel
 
-# class TypeUpdater(hoomd.custom.Action):
-#     def __init__(self, bounds:float|list|np.ndarray,direct:list|np.ndarray=np.array([0,np.pi/2])):
-#         self._bdry = None
-#         self.bounds = bounds
-#         self._u = np.array([np.cos(direct),np.sin(direct),np.zeros_like(direct)]).T
 
-#     @property
-#     def bounds(self) -> np.ndarray:
-#         return self._bdry
+
+class TypeUpdater(hoomd.custom.Action):
+    def __init__(self, bounds:float|list|np.ndarray,direct:list|np.ndarray=np.array([0,np.pi/2])):
+        self._bdry = None
+        self.bounds = bounds
+        self._u = np.array([np.cos(direct),np.sin(direct),np.zeros_like(direct)]).T
+
+    @property
+    def bounds(self) -> np.ndarray:
+        return self._bdry
     
-#     @bounds.setter
-#     def bounds(self, bounds:float|list|np.ndarray):
-#         if isinstance(bounds, float):
-#             self._bdry = np.array([bounds])
-#         elif isinstance(bounds, np.ndarray):
-#             self._bdry = bounds
-#         elif isinstance(bounds, list):
-#             self._bdry = np.array(bounds)
+    @bounds.setter
+    def bounds(self, bounds:float|list|np.ndarray):
+        if isinstance(bounds, float):
+            self._bdry = np.array([bounds])
+        elif isinstance(bounds, np.ndarray):
+            self._bdry = bounds
+        elif isinstance(bounds, list):
+            self._bdry = np.array(bounds)
 
-#     @property
-#     def unit_vectors(self) -> np.ndarray:
-#         return self._uvec
+    @property
+    def unit_vectors(self) -> np.ndarray:
+        return self._uvec
     
-#     @unit_vectors.setter
-#     def unit_vectors(self, direct:list|np.ndarray):
-#         self._u = np.array([np.cos(direct),np.sin(direct),np.zeros_like(direct)]).T
+    @unit_vectors.setter
+    def unit_vectors(self, direct:list|np.ndarray):
+        self._u = np.array([np.cos(direct),np.sin(direct),np.zeros_like(direct)]).T
 
-#     def attach(self, simulation):
-#         self._state = simulation.state
-#         self._comm = simulation.device.communicator
+    def attach(self, simulation):
+        self._state = simulation.state
+        self._comm = simulation.device.communicator
 
-#     # def detach(self):
-#     #     del self._state
-#     #     del self._comm
+    # def detach(self):
+    #     del self._state
+    #     del self._comm
 
-#     def act(self, timestep):
-#         with self._state.cpu_local_snapshot as snap:
-#             pts = snap.particles.position
-#             proj = np.array([pts@u for u in self._u])
-#             radii = np.linalg.norm(proj, axis=0)
-#             snap.particles.typeid = np.digitize(radii,self._bdry,right=True)
+    def act(self, timestep):
+        with self._state.cpu_local_snapshot as snap:
+            pts = snap.particles.position
+            proj = np.array([pts@u for u in self._u])
+            radii = np.linalg.norm(proj, axis=0)
+            snap.particles.typeid = np.digitize(radii,self._bdry,right=True)

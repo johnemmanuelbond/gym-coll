@@ -7,8 +7,8 @@ import gc
 import gymnasium as gym
 
 from sims import Simbase
-from sims.hpmc import Multipole as HPMC_Multipole
-from sims.bd import Multipole as BD_Multipole
+# from sims.mc import Multipole as HPMC_Multipole
+# from sims.bd import Multipole as BD_Multipole
 
 class GSDWrapper(gym.Wrapper):
     """
@@ -112,43 +112,43 @@ class OutOfBoxWrapper(gym.Wrapper):
 
 
 
-class BuckleWrapper(gym.Wrapper):
-    """For use with :py:mod:`envs.feedback_control`, this wrapper will end an episode early and return a large negative reward if the environment's underlying simulation applies a field which would buckle particles out of plane. This is unphysical in experiment.
+# class BuckleWrapper(gym.Wrapper):
+#     """For use with :py:mod:`envs.feedback_control`, this wrapper will end an episode early and return a large negative reward if the environment's underlying simulation applies a field which would buckle particles out of plane. This is unphysical in experiment.
 
-    :param env: a gymnasium environment with an underlying simulation (usually hoomd) in the backend. This simulation must have the attribute :code:`eta0` order for this wrapper to detect buckling.
-    :type env: :py:class:`Env`
-    :param k_buckle: the field strength in simulation units (kT) above which a highly concentrated ensemble of colloids will buckle
-    :type k_buckle: scalar
-    :param box_reward: the reward to return if a particle has left the simulation box, defaults to -100
-    :type box_reward: int, optional
-    :param eta_threshold: the area fraction above which a microstate is considered 'solid' enough to buckle, defaults to 0.8
-    :type eta_threshold: scalar, optional
-    :raises AssertionError: if the underyling simulation can't return buckling information (area fraction and threshold)
-    """        
-    def __init__(self,env,k_buckle, buckle_reward = -100, eta_threshold=0.8):
-        assert hasattr(env.unwrapped, 'sim'), "underlying environment must run a simulation"
-        assert isinstance(env.unwrapped.sim, HPMC_Multipole) or isinstance(env.unwrapped.sim, BD_Multipole), "underlying environment must run a Multipole simulation"
-        assert hasattr(env.unwrapped.sim,'eta0'), "underlying simulation must have an eta0 method for this wrapper to do anything"
-        self.env = env
-        self._br = np.float32(buckle_reward)
-        self._et = eta_threshold
-        self._kb = k_buckle
+#     :param env: a gymnasium environment with an underlying simulation (usually hoomd) in the backend. This simulation must have the attribute :code:`eta0` order for this wrapper to detect buckling.
+#     :type env: :py:class:`Env`
+#     :param k_buckle: the field strength in simulation units (kT) above which a highly concentrated ensemble of colloids will buckle
+#     :type k_buckle: scalar
+#     :param box_reward: the reward to return if a particle has left the simulation box, defaults to -100
+#     :type box_reward: int, optional
+#     :param eta_threshold: the area fraction above which a microstate is considered 'solid' enough to buckle, defaults to 0.8
+#     :type eta_threshold: scalar, optional
+#     :raises AssertionError: if the underyling simulation can't return buckling information (area fraction and threshold)
+#     """        
+#     def __init__(self,env,k_buckle, buckle_reward = -100, eta_threshold=0.8):
+#         assert hasattr(env.unwrapped, 'sim'), "underlying environment must run a simulation"
+#         assert isinstance(env.unwrapped.sim, HPMC_Multipole) or isinstance(env.unwrapped.sim, BD_Multipole), "underlying environment must run a Multipole simulation"
+#         assert hasattr(env.unwrapped.sim,'eta0'), "underlying simulation must have an eta0 method for this wrapper to do anything"
+#         self.env = env
+#         self._br = np.float32(buckle_reward)
+#         self._et = eta_threshold
+#         self._kb = k_buckle
 
-    def step(self, action):
-        """steps the environment forward under prescribed action. A field stronger than the crystallization voltage is applied while the simulation is condensed
+#     def step(self, action):
+#         """steps the environment forward under prescribed action. A field stronger than the crystallization voltage is applied while the simulation is condensed
 
-        :param action: an action to pass backwards to the wrapped environment 
-        :return: the environment's position in obsevration space, the reward for that position (with buckle considerations), whether the environment has terminated, whether the evironment has truncated, a dictionary of additional information
-        :rtype: tuple[int|ndarray,float,bool,bool,dict]
-        """        
-        obs, reward, term, trunc, info = super().step(action)
-        is_solid = self.env.unwrapped.sim.eta0 > self._et
-        strong_field = np.any( self.env.unwrapped.sim.electrodes.k_trans > self._kb )
-        if  is_solid and strong_field:
-            reward = self._br
-            trunc = True
+#         :param action: an action to pass backwards to the wrapped environment 
+#         :return: the environment's position in obsevration space, the reward for that position (with buckle considerations), whether the environment has terminated, whether the evironment has truncated, a dictionary of additional information
+#         :rtype: tuple[int|ndarray,float,bool,bool,dict]
+#         """        
+#         obs, reward, term, trunc, info = super().step(action)
+#         is_solid = self.env.unwrapped.sim.eta0 > self._et
+#         strong_field = np.any( self.env.unwrapped.sim.electrodes.k_trans > self._kb )
+#         if  is_solid and strong_field:
+#             reward = self._br
+#             trunc = True
 
-        return obs, reward, term, trunc, info
+#         return obs, reward, term, trunc, info
 
 
 class UpdateTimeWrapper(gym.Wrapper):
