@@ -1,4 +1,4 @@
-name: gym-hoomd
+name: gym-coll
 channels:
   - defaults
   - conda-forge
@@ -7,7 +7,7 @@ dependencies:
   - numpy
   - scipy
   - openmpi
-  - gymnasium=1.0
+  - gymnasium
   - sphinx
   - sphinx-rtd-theme
   - pip

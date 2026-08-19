@@ -3,19 +3,19 @@ import gsd.hoomd
 from timeit import default_timer as timer
 import matplotlib.pyplot as plt
 
-from utils import SuperEllipse, quat_to_angle, Electrodes
-
 from units.ac_field import _Pdf, _E0, kb, eps
 
 import hoomd
 from hoomd.dep.units import k_multipole
+from hoomd.dep import ForceQuadrupole, ExternalQuadrupole
+from hoomd.dep import ForceOctupole, ExternalOctupole
 from hoomd.dep import ForceAnypole, ExternalAnypole
 
 from sims import DynamicMonteCarlo
 from sims import BrownianDynamics
 
-test_N = 200
-eq_time = 150
+test_N = 1000
+eq_time = 500
 electrode_gap = 100 # um
 
 phys = {
@@ -47,38 +47,69 @@ def U_expt(rs, fcm=-0.5, **kwargs):
     return -2*lam(fcm=fcm,**kwargs) * (Er(rs,**kwargs)/_E0(**kwargs))**2 / fcm
 
 
-class MC(DynamicMonteCarlo):
+class MC_Qpole(DynamicMonteCarlo):
     def __init__(self, voltage):
         super().__init__(dt=1e-1)
         self.ideal=True
-        externals = []
-
-        for d in [0.0, np.pi/2]:
-            ext = ExternalAnypole(electrode_gap=electrode_gap, electrode_orientation=d)
-            for t in self.types:
-                ext.params[t] = dict(k_trans=voltage**2 * k_ref,
-                                     k_rot=0.0,
-                                     m_sym=0)
-            externals.append(ext)
-
-        self.externals = externals
+        qpole = ExternalQuadrupole(electrode_gap=electrode_gap)
+        for t in self.types:
+            qpole.params[t] = dict(k=voltage**2 * k_ref)
+        self.externals = [qpole]
 
 
-class BD(BrownianDynamics):
+class BD_Qpole(BrownianDynamics):
     def __init__(self, voltage):
         super().__init__(dt=1e-1)
         self.ideal=True
-        forces = []
+        qpole = ForceQuadrupole(electrode_gap=electrode_gap)
+        for t in self.types:
+            qpole.params[t] = dict(k=voltage**2 * k_ref)
+        self.forces = [qpole]
 
-        for d in [0.0, np.pi/2]:
-            force = ForceAnypole(electrode_gap=electrode_gap, electrode_orientation=d)
-            for t in self.types:
-                force.params[t] = dict(k_trans=voltage**2 * k_ref,
-                                       k_rot=0.0,
-                                       m_sym=0)
-            forces.append(force)
 
-        self.forces = forces
+class MC_Opole(DynamicMonteCarlo):
+    def __init__(self, voltage, q0):
+        super().__init__(dt=1e-1)
+        self.ideal=True
+        opole = ExternalOctupole(electrode_gap=electrode_gap, electrode_orientation=q0)
+        for t in self.types:
+            opole.params[t] = dict(k_para=(voltage/1.3)**2 * k_ref,
+                                   k_perp=(1.3*voltage)**2 * k_ref)
+        self.externals = [opole]
+
+
+class BD_Opole(BrownianDynamics):
+    def __init__(self, voltage, q0):
+        super().__init__(dt=1e-1)
+        self.ideal=True
+        opole = ForceOctupole(electrode_gap=electrode_gap, electrode_orientation=q0)
+        for t in self.types:
+            opole.params[t] = dict(k_para=(voltage/1.3)**2 * k_ref,
+                                   k_perp=(1.3*voltage)**2 * k_ref)
+        self.forces = [opole]
+
+# class MC_Qpole(DynamicMonteCarlo):
+#     def __init__(self, voltage):
+#         super().__init__(dt=1e-1)
+#         self.ideal=True
+#         qpole = ExternalQuadrupole(electrode_gap=electrode_gap)
+#         for t in self.types:
+#             qpole.params[t] = dict(k_trans=voltage**2 * k_ref,
+#                                     k_rot=0.0,
+#                                     m_sym=0)
+#         self.externals = [qpole]
+
+
+# class BD_Qpole(BrownianDynamics):
+#     def __init__(self, voltage):
+#         super().__init__(dt=1e-1)
+#         self.ideal=True
+#         qpole = ForceQuadrupole(electrode_gap=electrode_gap)
+#         for t in self.types:
+#             qpole.params[t] = dict(k_trans=voltage**2 * k_ref,
+#                                    k_rot=0.0,
+#                                    m_sym=0)
+#         self.forces = [qpole]
 
 if __name__ == "__main__":
 
@@ -99,9 +130,10 @@ if __name__ == "__main__":
 
     fig,ax = plt.subplots(1,1,figsize=(2.0,2.0),dpi=600)
 
-    ax.set_xlim(0,1/4)
+    ax.set_xlim([0,1/4])
     ax.set_xticks([0,1/12,1/6,1/4])
-    ax.set_xticklabels(['$0$','$d_g/12$','$d_g/6$','$d_g/4$'])
+    ax.set_xticklabels(['$0$','$1/12$','$1/6$','$1/4$'])
+    ax.set_xlabel("$r/d_g$")
     ax.set_ylabel('$U/kT$')
     ax.set_ylim([0,10])
 
@@ -111,24 +143,24 @@ if __name__ == "__main__":
         label = "$\\lambda f_{{CM}}^{{-1}}|E(r)/E_0|^2$" if i == 0 else None
         ax.plot(xx/electrode_gap,U_expt(xx*1e-6,voltage=v,**phys),linestyle='--',color='k', label=label)
 
-        for make_sim in [MC,BD]:
+        for make_sim in [MC_Qpole,BD_Qpole]:
             sim = make_sim(v)
-            if isinstance(sim,MC):
+            if isinstance(sim,DynamicMonteCarlo):
                 lab = 'mc'
                 color='red'
-            if isinstance(sim,BD): 
+            if isinstance(sim,BrownianDynamics): 
                 lab = 'bd'
                 color='blue'
 
             start = timer()
             sim.reset(init_state=init)
             sim.run(eq_time)
-            frame = sim.frame
-            sim.reset(init_state=frame,outfile=f"boltz_sim_{lab}_v{v:.1f}.gsd",nsnap=1.0,mode='wb')
+            frame = sim.microstate
+            sim.reset(init_state=frame,outfile=f"boltz_qpole_{lab}_v{v:.1f}.gsd",nsnap=1.0,mode='wb')
             sim.run(eq_time)
             end = timer()
 
-            frames = gsd.hoomd.open(f"boltz_sim_{lab}_v{v:.1f}.gsd",mode='r')
+            frames = gsd.hoomd.open(f"boltz_qpole_{lab}_v{v:.1f}.gsd",mode='r')
             pts = np.array([f.particles.position for f in frames])
             rs = np.linalg.norm(pts,axis=-1).flatten()
             edges = np.linspace(0,electrode_gap/2,100)
@@ -137,16 +169,79 @@ if __name__ == "__main__":
             p = counts/bin_areas
             mids = 0.5*(edges[1:] + edges[:-1])
             U_trans = -np.log(p/p.max())
-            ax.scatter(mids/electrode_gap,U_trans,s=10,marker=['o','s','^','H'][i],edgecolors=color,facecolors='none', label=f'{lab} - {v:.1f}V')
-
-            # xx = np.linspace(0,electrode_gap/2,100)
-            # if lab == 'mc' and i==0: label = ""
-            # ax1.plot(xx/electrode_gap,U_trans_theory(xx,v),linestyle='--',color='k')
+            ax.scatter(mids/electrode_gap,U_trans,s=10,marker=['o','s'][i],edgecolors=color,facecolors='none', label=f'{lab} - {v:.1f}V')
 
             frames.close()
 
             print(f"finished {lab}, V={v:.1f}, in {end-start:.2f}s",flush=True)
-            fig.savefig("boltz.png",bbox_inches='tight')
+            fig.savefig("boltz-qpole.png",bbox_inches='tight')
 
-    ax.legend(fontsize='x-small')
-    fig.savefig("boltz.png",bbox_inches='tight')
+    ax.legend(fontsize='xx-small')
+    fig.savefig("boltz-qpole.png",bbox_inches='tight')
+
+
+
+
+    fig,ax = plt.subplots(1,1,figsize=(2.0,2.0),dpi=600)
+    
+    ax.set_xlim([-1/4,1/4])
+    ax.set_xticks([-1/4,-1/8,0,1/8,1/4])
+    ax.set_xticklabels(['$-1/4$','$-1/8$','$0$','$1/8$','$1/4$'])
+    ax.set_xlabel("$x/d_g$")
+    ax.set_ylim([-1/4,1/4])
+    ax.set_yticks([-1/4,-1/8,0,1/8,1/4])
+    ax.set_yticklabels(['$-\\frac{{1}}{{4}}$','$-\\frac{{1}}{{8}}$','$0$','$\\frac{{1}}{{8}}$','$\\frac{{1}}{{4}}$'])
+    ax.set_ylabel("$\\frac{{y}}/{{d_g}}$", rotation=90)
+
+    xx = np.linspace(-electrode_gap/2,electrode_gap/2,101)
+    yy = np.linspace(-electrode_gap/2,electrode_gap/2,101)
+    XX, YY = np.meshgrid(0.5*(xx[1:]+xx[:-1]), 0.5*(yy[1:]+yy[:-1]))
+
+    for i, q0 in enumerate([np.pi/4,3*np.pi/4]):
+
+        voltage = [0.4,2.0][i]
+        k_para = (voltage/1.3)**2 * k_ref
+        k_perp = (1.3*voltage)**2 * k_ref
+        levels = np.array([0,1,2,3,4,5])
+
+        sinq = np.sin(q0)
+        cosq = np.cos(q0)
+        dr_para = (XX*cosq + YY*sinq)/electrode_gap
+        dr_perp = (-XX*sinq + YY*cosq)/electrode_gap
+        U_theory = 0.5*k_para*dr_para**2 + 0.5*k_perp*dr_perp**2
+
+        # label = "$\\lambda f_{{CM}}^{{-1}}|E(r)/E_0|^2$" if i == 0 else None
+        label = ["RH conic","LH conic"][i]
+        ax.contour(XX[0]/electrode_gap,YY[:,0]/electrode_gap,U_theory,linestyle=['-','--'][i],colors='k', label=label,levels=levels,lw=0.7)
+
+        for make_sim in [MC_Opole,BD_Opole]:
+            sim = make_sim(voltage, q0)
+            if isinstance(sim,DynamicMonteCarlo):
+                lab = 'mc'
+                color='red'
+            if isinstance(sim,BrownianDynamics): 
+                lab = 'bd'
+                color='blue'
+
+            start = timer()
+            sim.reset(init_state=init)
+            sim.run(eq_time)
+            frame = sim.microstate
+            sim.reset(init_state=frame,outfile=f"boltz_opole_{lab}_{i}.gsd",nsnap=1.0,mode='wb')
+            sim.run(eq_time)
+            end = timer()
+
+            frames = gsd.hoomd.open(f"boltz_opole_{lab}_{i}.gsd",mode='r')
+            pts = np.array([f.particles.position for f in frames])
+
+            counts = np.histogram2d(pts[:,:,0].flatten(),pts[:,:,1].flatten(),bins=100,range=[[-electrode_gap/2,electrode_gap/2],[-electrode_gap/2,electrode_gap/2]],density=False)[0]
+            p = counts.T/np.sum(counts)
+            U_boltz = -np.log(p/p.max())
+            ax.contour(XX[0]/electrode_gap,YY[:,0]/electrode_gap,U_boltz,levels=levels,colors=color, linestyle=["-","--"][i], label=f'{lab} - {["RH","LH"][i]}', lw=0.3)
+            frames.close()
+
+            print(f"finished {lab}, {i}, in {end-start:.2f}s",flush=True)
+            fig.savefig("boltz-opole.png",bbox_inches='tight')
+
+    # ax.legend(fontsize='xx-small')
+    fig.savefig("boltz-opole.png",bbox_inches='tight')

@@ -9,5 +9,5 @@ from .geometry import expand_around_pbc
 
 from .hoomd_helpers import random_frame, electrode_logger
 from .hoomd_helpers import hoomd_dlvo, capped_dlvo, hoomd_wca, hoomd_alj, hpmc_dipoles
-# from .hoomd_helpers import TypeUpdater
+from .hoomd_helpers import SwitchEta
 # from .hoomd_helpers import DLVO_table

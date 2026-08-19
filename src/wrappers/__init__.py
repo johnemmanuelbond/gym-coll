@@ -1,6 +1,6 @@
 """Module src/wrappers/__init__.py."""
 
-from .wrappers import GSDWrapper
+from .wrappers import HistoryWrapper, GSDWrapper
 
 from .wrappers import OutOfBoxWrapper
 # from .wrappers import BuckleWrapper

@@ -2,4 +2,4 @@ gsd
 numpy
 scipy
 openmpi
-gymnasium=1.0
+gymnasium

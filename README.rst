@@ -72,10 +72,8 @@ TODO
 
 gym-coll is still in development. Here is an abbreviated todo list for the devs
 
-1. Fix HPMC so we don't need to constantly call `mc.integrator=None` to reset the type lists in the integrator
+1. Add `systems` package and subpackages for specifc, paper-related, RL projects
 
-2. Decide whether to add `expts` package and subpackages for specifc, paper-related, RL projects
+2. Organize and finalize wrappers module to include RC trajectory saving.
 
-3. Organize and finalize wrappers module.
-
-4. Pare down utils module to only do what's neeed.
+3. Pare down utils module to only do what's neeed.

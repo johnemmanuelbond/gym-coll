@@ -2,13 +2,56 @@
 Contains classes which inherit `gymnasium.Wrapper <https://gymnasium.farama.org/api/wrappers/#gymnasium.Wrapper>`_ so that :doc:`environments <envs>` can interface with specific :doc:`simulations <sims>` properties, render their state to movies, or reset in a specific fasion.
 """
 import numpy as np
-import gc
-
 import gymnasium as gym
+from sims import Simbase, HoomdColloid
 
-from sims import Simbase
-# from sims.mc import Multipole as HPMC_Multipole
-# from sims.bd import Multipole as BD_Multipole
+class HistoryWrapper(gym.Wrapper):
+    """
+    A class used to store the an environment's state history to the `info` dictionary.
+
+    :param env: a gymnasium environment
+    :type env: :py:class:`Env`
+    """        
+    def __init__(self, env):
+        """
+        Constructor
+        """
+        super().__init__(env)
+        self.env=env
+        self._history = []
+    
+    def reset(self,seed=None,options=dict()):
+        """
+        Resets the environment and clears the history.
+
+
+        :param seed: RNG seed, defaults to None
+        :type seed: int | None, optional
+        :param options: kwargs for resetting the simulation, defaults to empty dict
+        :type options: dict, optional
+        :return: The position in observation space of the environment post reset, and a dictionary of additional information
+        :rtype: tuple[float,dict]
+        """        
+        self._history = []
+        obs,info =  self.env.reset(seed=seed, options=options)
+        self._history.append((self.env.unwrapped.sim.elapsed, *obs))
+        info = dict(info)
+        info['history'] = np.array(self._history,dtype=np.float32)
+        return obs, info
+
+    def step(self, action):
+        """
+        steps the environment forwar and saves the elapsed time and current environment state to the `info` dictionary.
+
+        :param action: an action to pass backwards to the wrapped environment 
+        :return: the environment's position in obsevration space, the reward for that position, whether the environment has terminated, whether the evironment has truncated, a dictionary of additional information
+        :rtype: tuple[int|ndarray,float,bool,bool,dict]
+        """
+        obs, reward, term, trunc, info = self.env.step(action)
+        self._history.append((self.env.unwrapped.sim.elapsed, *obs))
+        info = dict(info)
+        info['history'] = np.array(self._history,dtype=np.float32)
+        return obs, reward, term, trunc, info
 
 class GSDWrapper(gym.Wrapper):
     """
@@ -66,6 +109,7 @@ class GSDWrapper(gym.Wrapper):
             out = f"{self._pf}episode{self._ep:05}.gsd"
             options['outfile'] = out
             options['nsnap'] = nsnap
+            options['mode'] = 'wb'
         else:
             options['outfile'] = None
             options['nsnap'] = None
@@ -85,6 +129,7 @@ class OutOfBoxWrapper(gym.Wrapper):
     :raises AssertionError: if the underyling simulation can't return in/out of box information
     """        
     def __init__(self,env,box_reward = -20):
+        super().__init__(env)
         assert hasattr(env.unwrapped, 'sim'), "underlying environment must run a simulation"
         assert isinstance(env.unwrapped.sim, Simbase), "underlying environment must run a simulation"
         assert hasattr(env.unwrapped.sim,'in_box') and callable(getattr(env.unwrapped.sim,'in_box')), "underlying simulation must have in_box method for this wrapper to do anything"
@@ -98,7 +143,7 @@ class OutOfBoxWrapper(gym.Wrapper):
         :return: the environment's position in obsevration space, the reward for that position (with out-of-box considerations), whether the environment has terminated, whether the evironment has truncated, a dictionary of additional information
         :rtype: tuple[int|ndarray,float,bool,bool,dict]
         """        
-        obs, reward, term, trunc, info = super().step(action)
+        obs, reward, term, trunc, info = self.env.step(action)
         if not self.env.unwrapped.sim.in_box():
             reward = self._br
             trunc = True
@@ -167,9 +212,9 @@ class UpdateTimeWrapper(gym.Wrapper):
     :raises NotImplementedError: if the action and time spaces are not both Discrete or both Box types
     """        
     def __init__(self,env,tspace:gym.spaces.Space, max_elapsed, time_set=None):
+        super().__init__(env)
         assert hasattr(env.unwrapped, 'sim'), "underlying environment must run a simulation"
-        assert isinstance(env.unwrapped.sim, HPMC_Multipole) or isinstance(env.unwrapped.sim, BD_Multipole), "underlying environment must run a Multipole simulation"
-        assert hasattr(env.unwrapped.sim,'elapsed'), "underlying simulation must have an elapsed method for this wrapper to do anything"
+        assert isinstance(env.unwrapped.sim, Simbase), "underlying environment must run a gym-coll simulation"
         self.env = env
 
         disc_action = isinstance(env.action_space, gym.spaces.Discrete)
@@ -204,7 +249,7 @@ class UpdateTimeWrapper(gym.Wrapper):
             self._amap = lambda x: x[1:]
         
         self._tmax = max_elapsed
-        self._rt_init = env.unwrapped._rt
+        self._ut_init = env.unwrapped._ut
 
     def step(self, action):
         """steps the environment forward under prescribed action. The modified update time 
@@ -213,14 +258,14 @@ class UpdateTimeWrapper(gym.Wrapper):
         :return: the environment's position in obsevration space, the reward for that position (with buckle considerations), whether the environment has terminated, whether the evironment has truncated, a dictionary of additional information
         :rtype: tuple[int|ndarray,float,bool,bool,dict]
         """        
-        dt = self._tmap(action)
+        ut = self._tmap(action)
         env_act = self._amap(action)
-        dt_corrected = min(dt, self._tmax - self.env.unwrapped.sim.elapsed)
-        self.env.unwrapped._rt = dt_corrected
-        obs, reward, term, trunc, info = super().step(np.array(env_act).flatten())
-        trunc = (self.env.unwrapped.sim.elapsed + dt) >= self._tmax
+        ut_corrected = min(ut, self._tmax - self.env.unwrapped.sim.elapsed)
+        self.env.unwrapped._ut = ut_corrected
+        obs, reward, term, trunc, info = self.env.step(np.array(env_act).flatten())
+        trunc = (self.env.unwrapped.sim.elapsed + ut) >= self._tmax
 
-        scaled_reward = reward * dt_corrected/self._rt_init
+        scaled_reward = reward * ut_corrected/self._ut_init
 
         return obs, scaled_reward, term, trunc, info
 

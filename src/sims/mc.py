@@ -104,18 +104,9 @@ class DynamicMonteCarlo(HoomdColloid):
         """Return a default HPMC integrator object with the current step sizes."""
         if self._is_disc:
             mc = hoomd.hpmc.integrate.Sphere(nselect=2, translation_move_probability=1.0,default_d=self.dx)
-            for t in self.types:
-                mc.shape[t] = dict(diameter=2*self._s.ay)
-            return mc
-        
         else:
             mc = hoomd.hpmc.integrate.ConvexSpheropolygon(nselect=3,translation_move_probability=2/3,default_a=self.da,default_d=self.dx)
-            for t in self.types:
-                mc.shape[t] = dict(
-                    vertices = self._s.vertices[:,:2].tolist(),
-                    sweep_radius = self._s.contact_ratio*self._s.ay,
-                )
-            return mc
+        return mc
 
     @property
     def integrator(self) -> hoomd.hpmc.integrate.Integrator:
@@ -125,6 +116,13 @@ class DynamicMonteCarlo(HoomdColloid):
         if self._ideal:
             for p1,p2 in self.pairs:
                 mc.interaction_matrix[(p1,p2)] = False
+
+        if set(mc.shape.keys()) != set(self.types):
+            for t in self.types:
+                if self._is_disc:
+                    mc.shape[t] = dict(diameter=2*self._s.ay)
+                else:
+                    mc.shape[t] = dict(vertices = self._s.vertices[:,:2].tolist(), sweep_radius = self._s.contact_ratio*self._s.ay)
 
         if len(self._pair) > 0: mc.pair_potentials = self._pair
         if len(self._external) > 0: mc.external_potentials = self._external
@@ -139,6 +137,7 @@ class DynamicMonteCarlo(HoomdColloid):
         else:
             assert isinstance(hpmc, hoomd.hpmc.integrate.Integrator), "integrator must be a hoomd.hpmc.integrate.Integrator object"
             self._hpmc = hpmc
+        
 
     @property
     def ideal(self) -> bool:
@@ -185,8 +184,6 @@ class DynamicMonteCarlo(HoomdColloid):
 
         if len(self._sim.operations.writers)>0:
             if not self._is_disc: self.logger.add(self._hpmc,quantities=['type_shapes'])
-        # mc = self.integrator
-        # print(mc.a['A'],mc.d['A'], mc.nselect)
 
         super().run(time, *args)
 

@@ -92,12 +92,12 @@ class OneDim(Simbase):
         return 1
     
     @property
-    def state(self) -> tuple:
+    def state(self) -> float:
         """
         :return: The position of the simulation in low-dimensional space
-        :rtype: tuple
+        :rtype: scalar
         """        
-        return (self.x,)
+        return self.x
     
     @property
     def elapsed(self) -> float:
@@ -268,15 +268,12 @@ class AnyDim(Simbase):
         return self._d
 
     @property
-    def state(self) -> tuple:
+    def state(self) -> np.ndarray:
         """
         :return: The position of the simulation in low-dimensional space, *indexed by coordinate*.
-        :rtype: tuple
+        :rtype: ndarray
         """        
-        if len(self.x) == 1:
-            return tuple(self.x.flatten().tolist())
-        else:
-            return tuple([xi for xi in self.x.T])
+        return self.x
     
     @property
     def elapsed(self) -> float:

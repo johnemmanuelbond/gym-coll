@@ -2,9 +2,8 @@
 """Base abstractions for colloidal simulations used by gym-coll.
 
 This module defines the basic interface for simulation-backed environments.
-A concrete simulation must be able to advance its state, reset itself to an
-initial condition, and expose its current state as a vector of order
-parameters.
+A concrete simulation must be able to advance its microstate, reset itself to an
+initial condition.
 """
 import string
 from itertools import combinations_with_replacement as combinations
@@ -31,23 +30,13 @@ _alphabet = [f"A{i}" for i in range(100)]
 class Simbase:
     """Minimal simulation interface for environments and wrappers.
 
-    This base class is meant to be subclassed by concrete simulations. A
-    subclass should define how its state is represented and how it advances and
-    resets itself.
+    This base class is meant to be subclassed by concrete simulations. All subclasses
+    should be able to reset to some initial state and advance its state.
     """
 
     def __init__(self):
         """Initialize an empty simulation object."""
         pass
-
-
-    @property
-    def state(self) -> tuple:
-        """
-        :return: the position of the simulation in order parameter space
-        :rtype: tuple
-        """        
-        return (None,)
 
     @property
     def elapsed(self)-> int:
@@ -56,14 +45,6 @@ class Simbase:
         :rtype: int
         """
         return self.step
-
-    @property
-    def state_dim(self) -> int:
-        """
-        :return: the dimensionality of the simulation in order parameter space
-        :rtype: int
-        """        
-        return len(self.state)
 
     def reset(self, **kwargs):
         """Reset the simulation to its initial configuration.
@@ -87,7 +68,7 @@ class Simbase:
 class HoomdColloid(Simbase):
     """HOOMD-blue-backed colloidal simulation wrapper.
 
-    This class manages a particle-based simulation with HOOMD-blue, including
+    This class manages simulating colloidal particles with HOOMD-blue, including
     particle initialization, shape handling, and state computation from the
     current snapshot.
 
@@ -142,7 +123,7 @@ class HoomdColloid(Simbase):
         self._sim = hoomd.Simulation(device=hoomd.device.CPU(),seed=seed)
 
     @property
-    def frame(self) -> gsd.hoomd.Frame:
+    def microstate(self) -> gsd.hoomd.Frame:
         """
         :return: the current simulation snapshot which contains particle position/orientation data
         :rtype: `gsd.hoomd.Frame <https://gsd.readthedocs.io/en/stable/python-module-gsd.hoomd.html#gsd.hoomd.Frame>`_
@@ -212,7 +193,7 @@ class HoomdColloid(Simbase):
         :return: simulation box
         :rtype: array-like
         """        
-        return self.frame.configuration.box
+        return self.microstate.configuration.box
     
     @property
     def shape(self) -> SuperEllipse:
@@ -296,37 +277,6 @@ class HoomdColloid(Simbase):
         :rtype: scalar
         """        
         return self._dt
-
-    @property
-    def state(self) -> tuple:
-        """Return the current state vector derived from the active snapshot. Must be overrriden in subclasses to actually use in environments.
-
-        :return: the vector of order parameters computed by the state functional
-        :rtype: tuple
-        """
-        warn("state property must be implemented in subclasses")
-        return (None,)
-
-
-    # @property
-    # def state(self) -> tuple:
-    #     """Return the current state vector derived from the active snapshot.
-
-    #     :return: the vector of order parameters computed by the state functional
-    #     :rtype: tuple
-    #     """
-    #     frame = self.frame
-    #     pts = frame.particles.position
-    #     if self._is_disc:
-    #         os = None
-    #     else:
-    #         os = frame.particles.orientation
-    #     state = self._lambda_f(pts,os,self._s)
-    #     if isinstance(state,tuple): return state
-    #     if isinstance(state,list): return tuple(state)
-    #     if isinstance(state, int) or isinstance(state, float) or isinstance(state,np.float): return (state,)
-    #     if isinstance(state, np.ndarray): return tuple(state.tolist())
-    #     return state
 
     @property
     def logger(self) -> hoomd.logging.Logger | None:

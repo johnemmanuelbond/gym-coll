@@ -16,7 +16,6 @@ Subclasses
 
 .. toctree::
    :maxdepth: 2
-   :caption: Subclasses:
 
    bd
    mc

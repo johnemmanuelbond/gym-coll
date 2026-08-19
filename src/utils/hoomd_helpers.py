@@ -92,9 +92,10 @@ def random_frame(N:int, W:float, H:float=None,
 
     return frame
 
-def electrode_logger(k_trans:float|list|np.ndarray=None,
-                     k_rot:float|list|np.ndarray=None,
-                     direct:float|list|np.ndarray=None):
+def electrode_logger(k_trans:float|list|np.ndarray,
+                     k_rot:float|list|np.ndarray,
+                     direct:float|list|np.ndarray,
+                     electrode_gap:float,):
     """creates a `logging <https://hoomd-blue.readthedocs.io/en/latest/hoomd/module-logging.html>`_ object so that simulations write the field configuration to `gsd <https://gsd.readthedocs.io/en/stable/index.html>`_ files. This way scripts which read these files can create :py:class:`Electrodes` objects for recreating simulation objects or rendering energy landscapes.
 
     :param k_trans: sets the translational field strengths in kT units constraining particles along each multipole axis, defaults to None
@@ -105,16 +106,16 @@ def electrode_logger(k_trans:float|list|np.ndarray=None,
     :type direct: list | np.ndarray, optional
     :return: a hoomd `logging <https://hoomd-blue.readthedocs.io/en/latest/hoomd/module-logging.html>`_ object to record the field configuration
     :rtype: `hoomd.logging.Logger <https://hoomd-blue.readthedocs.io/en/latest/hoomd/logging/logger.html#>`_
-    """        
-    if not (k_trans is None): self.k_trans = k_trans
-    if not (k_rot is None): self.k_rot = k_rot
-    if not (direct is None): self.direct = direct
+    """
+    k_trans = np.array([k_trans]).flatten().tolist()
+    k_rot   = np.array([k_rot]).flatten().tolist()
+    direct  = np.array([direct]).flatten().tolist()
 
-    action_log = hoomd.logging.Logger(only_default=False, categories = ["scalar", "sequence"])
-    action_log[('value','k_trans')] = (lambda: self.k_trans.copy(), 'sequence')
-    action_log[('k_rot')] = (lambda: self.k_rot.copy(), 'sequence')
-    action_log[('direct')] = (lambda: self.direct.copy(), 'sequence')
-    action_log[('dg')] = (lambda: [self._dg], 'scalar')
+    action_log = hoomd.logging.Logger(only_default=False)
+    action_log[('electrode','k_trans')] = (lambda: k_trans, 'sequence')
+    action_log[('electrode','k_rot')] = (lambda: k_rot, 'sequence')
+    action_log[('electrode','direct')] = (lambda: direct, 'sequence')
+    action_log[('electrode','dg')] = (lambda: electrode_gap, 'scalar')
     return action_log
 
 
@@ -289,45 +290,42 @@ def hpmc_dipoles(shape:SuperEllipse, energy_scale:float):
     return attract, repel
 
 
-
-class TypeUpdater(hoomd.custom.Action):
-    def __init__(self, bounds:float|list|np.ndarray,direct:list|np.ndarray=np.array([0,np.pi/2])):
-        self._bdry = None
-        self.bounds = bounds
-        self._u = np.array([np.cos(direct),np.sin(direct),np.zeros_like(direct)]).T
-
-    @property
-    def bounds(self) -> np.ndarray:
-        return self._bdry
-    
-    @bounds.setter
-    def bounds(self, bounds:float|list|np.ndarray):
-        if isinstance(bounds, float):
-            self._bdry = np.array([bounds])
-        elif isinstance(bounds, np.ndarray):
-            self._bdry = bounds
-        elif isinstance(bounds, list):
-            self._bdry = np.array(bounds)
-
-    @property
-    def unit_vectors(self) -> np.ndarray:
-        return self._uvec
-    
-    @unit_vectors.setter
-    def unit_vectors(self, direct:list|np.ndarray):
-        self._u = np.array([np.cos(direct),np.sin(direct),np.zeros_like(direct)]).T
+class SwitchEta(hoomd.custom.Action):
+    def __init__(self, eta_bins:np.ndarray, shape:SuperEllipse, periodic=[False, False, False]):
+        self.shape = shape
+        self._bdry = eta_bins
 
     def attach(self, simulation):
         self._state = simulation.state
         self._comm = simulation.device.communicator
+        self._Nt = len(self._state.particle_types)
 
-    # def detach(self):
-    #     del self._state
-    #     del self._comm
+    @property
+    def shape(self):
+        return self._s
+
+    @shape.setter
+    def shape(self, shape:SuperEllipse):
+        if not hasattr(shape, 'outsphere'): shape.contact_vertices(n_verts=16, require_corners=True)
+        self._s = shape
+        self._d = shape.outsphere
+        self._Ap = shape.area
+    
+    def local_eta(self, pts, box):
+        dists = squareform(pdist(pts))
+        ncut = 2.6*self._d
+        nnei_inner = np.sum(dists<(ncut-self._d/2), axis=-1)
+        nnei_outer = np.sum(dists<(ncut+self._d/2), axis=-1)
+        nnei = nnei_inner + 0.5*(nnei_outer - nnei_inner)
+        etas = nnei * self._Ap / (np.pi*ncut**2)
+        return etas
 
     def act(self, timestep):
+            
         with self._state.cpu_local_snapshot as snap:
             pts = snap.particles.position
-            proj = np.array([pts@u for u in self._u])
-            radii = np.linalg.norm(proj, axis=0)
-            snap.particles.typeid = np.digitize(radii,self._bdry,right=True)
+            box = snap.local_box.L
+            etas = self.local_eta(pts, box)
+            type_idx = np.digitize(etas, self._bdry).clip(1, self._Nt) - 1
+            snap.particles.typeid = type_idx
+

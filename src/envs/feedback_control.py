@@ -30,6 +30,8 @@ class Discrete(gym.Env):
     :type observation_space: gymnasium.spaces.Discrete | spaces.MultiDiscrete
     :param action_space: The discrete action space
     :type action_space: gymnasium.spaces.Discrete
+    :param lambda_state: The state functional which evaluates the simulation object itself, calling appropriate attributes and performing calculations
+    :type lambda_state: function
     :param lambda_reward: The reward functional which acts over observation space
     :type lambda_reward: function
     :param lambda_terminate: The termination function which acts over observation space
@@ -46,9 +48,10 @@ class Discrete(gym.Env):
                  sim:base.Simbase,
                  observation_space: spaces.Discrete | spaces.MultiDiscrete,
                  action_space: spaces.Discrete,
-                 lambda_reward,
-                 lambda_terminate,
-                 action_set,
+                 lambda_state: callable,
+                 lambda_reward: callable,
+                 lambda_terminate: callable,
+                 action_set: list|np.ndarray,
                  max_steps:int=100,
                  step_size:float|int=1,
                  ):
@@ -59,21 +62,15 @@ class Discrete(gym.Env):
 
         self.action_space = action_space
         self.observation_space = observation_space
-
-        if isinstance(observation_space, spaces.Discrete):
-            assert sim.state_dim == 1, "Simulation dimensions must match observation space"
-        else:
-            assert len(observation_space.shape) == 1, "observation space must have at most rank 1"
-            assert sim.state_dim == observation_space.shape[0], "Simulation dimensions must match observation space"
         
         assert action_space.n == len(action_set), "Set of actions must have same shape as action space"
         
-
+        self._S = lambda_state
+        self._A = action_set
         self._R = lambda_reward
         self._T = lambda_terminate
         self._end = max_steps
-        self._act = action_set
-        self._rt = step_size
+        self._ut = step_size
 
     @property
     def actions(self) -> list|np.ndarray:
@@ -81,23 +78,24 @@ class Discrete(gym.Env):
         :return: the list of actions which correspond to the indices of the discrete action space
         :rtype: ndarray or list
         """
-        return self._act
+        return self._A
 
     def _get_obs(self) -> int|np.ndarray:
         """
         :return: The current position in observation space
         :rtype: int | ndarray
         """        
-
-        if self.sim.state_dim==1:
+        try:
+            state = self._S(self.sim)
+        except AttributeError:
+            raise Exception("State functional is not properly defined")
+        
+        if isinstance(self.observation_space, spaces.Discrete):
             n = self.observation_space.n
-            op = self.sim.state[0]
-            obs = min(int(op * n),n-1)
+            obs = min(int(state * n),n-1)
         else:
             nvec = self.observation_space.nvec
-            ovec = self.sim.state
-            obs = tuple([min(int(op * n),n-1) for op,n in zip(ovec,nvec)])
-            # obs = np.array(tuple([min(int(op * n),n-1) for op,n in zip(ovec,nvec)]))
+            obs = tuple([min(int(op * n),n-1) for op,n in zip(state,nvec)])
         
         return obs
     
@@ -151,7 +149,7 @@ class Discrete(gym.Env):
         :return: the environment's position in obsevration space, the reward for that position, whether the environment has terminated, whether the evironment has truncated, a dictionary of additional information
         :rtype: tuple[int|ndarray,float,bool,bool,dict]
         """        
-        self.sim.run(self._rt, *np.array([self._act[action]]).flatten())
+        self.sim.run(self._ut, *np.array([self._A[action]]).flatten())
 
         obs = self._get_obs()
         info = self._get_info()
@@ -174,6 +172,7 @@ class Semidiscrete(gym.Env):
     :type observation_space: gymnasium.spaces.Box
     :param action_space: The discrete action space
     :type action_space: gymnasium.spaces.Discrete
+    :param lambda_state: The state functional which evaluates the simulation object itself, calling appropriate attributes and performing calculations
     :param lambda_reward: The reward functional which acts over observation space
     :type lambda_reward: function
     :param lambda_terminate: The termination function which acts over observation space
@@ -190,9 +189,10 @@ class Semidiscrete(gym.Env):
                  sim:base.Simbase,
                  observation_space: spaces.Box,
                  action_space: spaces.Discrete,
-                 lambda_reward,
-                 lambda_terminate,
-                 action_set,
+                 lambda_state: callable,
+                 lambda_reward: callable,
+                 lambda_terminate: callable,
+                 action_set: list|np.ndarray,
                  max_steps:int=100,
                  step_size:float|int=1,
                  ):
@@ -205,14 +205,14 @@ class Semidiscrete(gym.Env):
         self.observation_space = observation_space
         
         assert len(observation_space.shape) == 1, "observation space must have at most rank 1"
-        assert sim.state_dim == observation_space.shape[0], "Simulation dimensions must match observation space"
         assert action_space.n == len(action_set), "Set of actions must have same shape as action space"
 
+        self._S = lambda_state
+        self._A = action_set
         self._R = lambda_reward
         self._T = lambda_terminate
         self._end = max_steps
-        self._act = action_set
-        self._rt = step_size
+        self._ut = step_size
     
     @property
     def actions(self) -> list|np.ndarray:
@@ -220,14 +220,15 @@ class Semidiscrete(gym.Env):
         :return: the list of actions which correspond to the indices of the discrete action space
         :rtype: ndarray or list
         """
-        return self._act
+        return self._A
 
     def _get_obs(self) -> int|tuple:
         """
         :return: The current position in observation space
         :rtype: int|tuple
-        """        
-        return np.array(self.sim.state,dtype=np.float32)
+        """
+        state = self._S(self.sim)
+        return np.array(state,dtype=np.float32).flatten()
     
     def _get_info(self) -> dict:
         """
@@ -278,7 +279,7 @@ class Semidiscrete(gym.Env):
         :return: the environment's position in obsevration space, the reward for that position, whether the environment has terminated, whether the evironment has truncated, and a dictionary of additional information
         :rtype: tuple[int,float,bool,bool,dict]
         """        
-        self.sim.run(self._rt, *np.array([self._act[action]]).flatten())
+        self.sim.run(self._ut, *np.array([self._A[action]]).flatten())
 
         obs = self._get_obs()
         info = self._get_info()
@@ -315,8 +316,9 @@ class Continuous(gym.Env):
                  sim:base.Simbase,
                  observation_space: spaces.Box,
                  action_space: spaces.Box,
-                 lambda_reward,
-                 lambda_terminate,
+                 lambda_state: callable,
+                 lambda_reward: callable,
+                 lambda_terminate: callable,
                  max_steps:int=100,
                  step_size:float|int = 1,
                  ):
@@ -329,23 +331,29 @@ class Continuous(gym.Env):
         self.observation_space = observation_space
 
         assert len(observation_space.shape) == 1, "observation space must have at most rank 1"
-        assert sim.state_dim == observation_space.shape[0], "Simulation dimensions must match observation space"
 
+        self._S = lambda_state
+        self._A = (self.action_space.low, self.action_space.high)
         self._R = lambda_reward
         self._T = lambda_terminate
         self._end = max_steps
-        self._rt = step_size
-        
-        self.field_low  = self.action_space.low
-        self.field_high = self.action_space.high
-        
+        self._ut = step_size
+
+    @property
+    def action_bounds(self) -> tuple:
+        """
+        :return: the high and low bounds of the action space.
+        :rtype: tuple
+        """
+        return self._A
         
     def _get_obs(self) -> int|tuple:
         """
         :return: The current position in observation space
         :rtype: int|tuple
         """        
-        return np.array(self.sim.state,dtype=np.float32)
+        state = self._S(self.sim)
+        return np.array(state,dtype=np.float32).flatten()
 
     def _get_info(self) -> dict:
         """
@@ -395,8 +403,9 @@ class Continuous(gym.Env):
         :type action: scalar, array-like
         :return: the environment's position in obsevration space, the reward for that position, whether the environment has terminated, whether the evironment has truncated, and a dictionary of additional information
         :rtype: tuple[int,float,bool,bool,dict]
-        """        
-        self.sim.run(self._rt, *np.array([action]).flatten())
+        """
+        assert self.action_space.contains(action), "Action is not in action space"
+        self.sim.run(self._ut, *np.array([action]).flatten())
 
         obs = self._get_obs()
         info = self._get_info()
