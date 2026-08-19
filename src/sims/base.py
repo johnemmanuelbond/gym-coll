@@ -5,23 +5,9 @@ This module defines the basic interface for simulation-backed environments.
 A concrete simulation must be able to advance its microstate, reset itself to an
 initial condition.
 """
-import string
 from itertools import combinations_with_replacement as combinations
-from warnings import warn
-import importlib.util
 import numpy as np
-import gsd.hoomd
-
-has_hoomd = False
-try:
-    spec = importlib.util.find_spec('hoomd')
-    if spec is not None:
-        has_hoomd=True
-except ModuleNotFoundError:
-    has_hoomd = False
-    warn("hoomd not found, sims module may not work.")
-if has_hoomd: import hoomd
-
+import hoomd, gsd.hoomd
 from utils import SuperEllipse, random_frame
 
 _default_sphere = SuperEllipse(ax=0.5,ay=0.5)
@@ -126,7 +112,7 @@ class HoomdColloid(Simbase):
     def microstate(self) -> gsd.hoomd.Frame:
         """
         :return: the current simulation snapshot which contains particle position/orientation data
-        :rtype: `gsd.hoomd.Frame <https://gsd.readthedocs.io/en/stable/python-module-gsd.hoomd.html#gsd.hoomd.Frame>`_
+        :rtype: :py:class:`gsd.hoomd.Frame`
         """        
         if self._N == 0: return None
         return self._sim.state.get_snapshot()
@@ -283,7 +269,7 @@ class HoomdColloid(Simbase):
         """Return a HOOMD logger for recording simulation quantities.
 
         :return: a HOOMD logger object that records information about the simulation run
-        :rtype: `hoomd.logging.Logger <https://hoomd-blue.readthedocs.io/en/stable/hoomd/logging/logger.html>`_
+        :rtype: :py:class:`hoomd.logging.Logger`
         """
         if self._logger is None:
             self._logger = hoomd.logging.Logger(only_default=False)
@@ -294,7 +280,7 @@ class HoomdColloid(Simbase):
         """Set the HOOMD logger for recording simulation quantities.
 
         :param logger: a HOOMD logger object that records information about the simulation run
-        :type logger: `hoomd.logging.Logger <https://hoomd-blue.readthedocs.io/en/stable/hoomd/logging/logger.html>`_
+        :type logger: :py:class:`hoomd.logging.Logger`
         """
         self._logger = logger
 
@@ -303,7 +289,7 @@ class HoomdColloid(Simbase):
         """Return the current HOOMD simulation object.
 
         :return: the HOOMD simulation object that manages the particle dynamics
-        :rtype: `hoomd.Simulation <https://hoomd-blue.readthedocs.io/en/stable/hoomd/simulation/simulation.html>`_
+        :rtype: :py:class:`hoomd.Simulation`
         """
         return self._sim
 
@@ -317,7 +303,7 @@ class HoomdColloid(Simbase):
         """Add a HOOMD updater to the simulation.
 
         :param updater: a HOOMD updater object that modifies the simulation state
-        :type updater: `hoomd.update.Update <https://hoomd-blue.readthedocs.io/en/stable/hoomd/update/update.html>`_
+        :type updater: :py:class:`hoomd.update.Update`
         """
         self._sim.operations.updaters.append(updater)
 

@@ -17,8 +17,8 @@ The Simulation Base Class
 Below we've included a snippet of the SMRL :doc:`documentation <modules>`. This documentation describes the base class for simulations. The key elements of a simulation are some way to initialize a system, we'll call that :code:`reset()`, some way to evolve the system over time, :code:`run()` and some way to characterize the system, :code:`state`. Simbase defines the common language with which many soft matter systems may be programmed.
 
 .. autoclass:: sims.base.Simbase
-    :members: run, reset, state
-    :undoc-members: dims
+    :members: run, reset
+    :undoc-members: elapsed
     :no-index:
 
 

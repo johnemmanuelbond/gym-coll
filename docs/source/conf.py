@@ -22,15 +22,23 @@ release = '1.0.0'
 
 extensions = extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.intersphinx',
     'sphinx_rtd_theme',
     'sphinx_book_theme',
     'sphinxcontrib.video',
 ]
 
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3/', None),
+    'hoomd': ('https://hoomd-blue.readthedocs.io/en/stable/', None),
+}
+
 templates_path = ['_templates']
 exclude_patterns = []
 
 autodoc_member_order = 'groupwise'
+autodoc_mock_imports = ["hoomd", "hoomd.custom"]
+
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output

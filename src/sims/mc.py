@@ -27,21 +27,8 @@ The simulation uses the same internal unit conventions as the Brownian
 Dynamics module: energy is expressed in units of :math:`kT`, length is set by
 the particle geometry, and time is controlled by the diffusivity scale.
 """
-from gettext import translation
-
 import numpy as np
-
-import importlib.util
-has_hoomd = False
-try:
-    spec = importlib.util.find_spec('hoomd')
-    if spec is not None:
-        has_hoomd=True
-except ModuleNotFoundError:
-    has_hoomd = False
-    raise Warning("hoomd not found, sims.hpmc module will not work. Install hoomd-blue to use this module.")
-if has_hoomd: import hoomd
-
+import hoomd
 from sims import HoomdColloid
 from utils import SuperEllipse
 
@@ -82,22 +69,34 @@ class DynamicMonteCarlo(HoomdColloid):
     
     @property
     def dx(self) -> float:
-        """ :return: the maximum translational step size in simulation units :rtype: scalar """
+        """
+        :return: the maximum translational step size in simulation units
+        :rtype: scalar
+        """
         return np.sqrt(4*self.DT*self.dt)
 
     @dx.setter
     def dx(self, dx:float):
-        """ :param dx: the maximum translational step size in simulation units :type dx: scalar """
+        """
+        :param dx: the maximum translational step size in simulation units
+        :type dx: scalar
+        """
         self._DT = dx**2/(4*self.dt)
 
     @property
     def da(self) -> float:
-        """ :return: the maximum rotational step size in simulation units :rtype: scalar """
+        """
+        :return: the maximum rotational step size in simulation units
+        :rtype: scalar
+        """
         return np.sqrt(6*self.DR*self.dt)
 
     @da.setter
     def da(self, da:float):
-        """ :param da: the maximum rotational step size in simulation units :type da: scalar """
+        """
+        :param da: the maximum rotational step size in simulation units
+        :type da: scalar
+        """
         self._DR = da**2/(6*self.dt)
 
     def _shape_integrator(self) -> hoomd.hpmc.integrate.Integrator:
@@ -110,7 +109,10 @@ class DynamicMonteCarlo(HoomdColloid):
 
     @property
     def integrator(self) -> hoomd.hpmc.integrate.Integrator:
-        """ :return: the current Monte Carlo integrator object :rtype: `hoomd.hpmc.integrate.Integrator <https://hoomd-blue.readthedocs.io/en/stable/hoomd/hpmc/integrate/integrator.html>`_ """
+        """
+        :return: the current Monte Carlo integrator object
+        :rtype: :py:class:`hoomd.hpmc.integrate.Integrator`
+        """
         mc = self._hpmc
 
         if self._ideal:
@@ -131,7 +133,10 @@ class DynamicMonteCarlo(HoomdColloid):
 
     @integrator.setter
     def integrator(self, hpmc: hoomd.hpmc.integrate.Integrator|None):
-        """ :param value: the Monte Carlo integrator to use :type value: `hoomd.hpmc.integrate.Integrator <https://hoomd-blue.readthedocs.io/en/stable/hoomd/hpmc/integrate/integrator.html>`_ """
+        """
+        :param value: the Monte Carlo integrator to use
+        :type value: :py:class:`hoomd.hpmc.integrate.Integrator`
+        """
         if hpmc is None:
             self._hpmc = self._shape_integrator()
         else:
@@ -141,33 +146,51 @@ class DynamicMonteCarlo(HoomdColloid):
 
     @property
     def ideal(self) -> bool:
-        """ :return: whether the simulation uses only excluded-volume interactions :rtype: bool """
+        """
+        :return: whether the simulation ignores pair interactions
+        :rtype: bool
+        """
         return self._ideal
     
     @ideal.setter
     def ideal(self, value: bool):
-        """ :param value: whether the simulation should ignore pair interactions :type value: bool """
+        """
+        :param value: whether the simulation ignores pair interactions
+        :type value: bool
+        """
         self._ideal = value
     
     @property
     def externals(self) -> list:
-        """ :return: the list of external potentials applied to the simulation :rtype: list """
+        """
+        :return: the list of external potentials applied to the simulation
+        :rtype: list of :py:class:`hoomd.hpmc.external.External` objects
+        """
         return self._external
 
     @externals.setter
     def externals(self, value: list):
-        """ :param value: the list of external potentials to apply to the simulation :type value: list """
+        """
+        :param value: the list of external potentials to apply to the simulation
+        :type value: list of :py:class:`hoomd.hpmc.external.External` objects
+        """
         assert isinstance(value,list) and all(isinstance(x, hoomd.hpmc.external.External) for x in value), "externals must be a list of potential objects"
         self._external = value
 
     @property
     def pair_potentials(self) -> list:
-        """ :return: the list of particle-particle pair potentials applied to the simulation :rtype: list """
+        """
+        :return: the list of particle-particle pair potentials applied to the simulation
+        :rtype: list of :py:class:`hoomd.hpmc.pair.Pair` objects
+        """
         return self._pair
 
     @pair_potentials.setter
     def pair_potentials(self, value: list):
-        """ :param value: the list of particle-particle pair potentials to apply to the simulation :type value: list """
+        """
+        :param value: the list of particle-particle pair potentials to apply to the simulation
+        :type value: list of :py:class:`hoomd.hpmc.pair.Pair` objects
+        """
         assert isinstance(value,list) and all(isinstance(x, hoomd.hpmc.pair.Pair) for x in value), "pairs must be a list of pair potential objects"
         self._pair = value
 

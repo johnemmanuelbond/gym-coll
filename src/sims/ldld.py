@@ -31,10 +31,7 @@ or simulation generated its diffusion landscape.
 WIP: add source(s)
 """
 import numpy as np
-
 from sims import Simbase
-
-
 
 
 class OneDim(Simbase):
@@ -203,7 +200,6 @@ class OneDim(Simbase):
 
             new_t = self.t + dt
             self.t = new_t
-
 
 
 class AnyDim(Simbase):

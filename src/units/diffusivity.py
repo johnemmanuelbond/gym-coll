@@ -4,7 +4,7 @@ Contains a few helper methods for converting SI values :math:`[m,s,J]` to simula
 """
 
 import numpy as np
-from utils import SuperEllipse
+# from utils import SuperEllipse
 
 # General physical constants
 kb = 1.380e-23 # [J/K] Boltzmann constant

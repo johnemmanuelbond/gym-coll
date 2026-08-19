@@ -40,18 +40,7 @@ and additional forces can be attached through the ``forces`` interface.
 """
 
 import numpy as np
-
-import importlib.util
-has_hoomd = False
-try:
-    spec = importlib.util.find_spec('hoomd')
-    if spec is not None:
-        has_hoomd=True
-except ModuleNotFoundError:
-    has_hoomd = False
-    raise Warning("hoomd not found, sims.bd module will not work. Install hoomd-blue to use this module.")
-if has_hoomd: import hoomd
-
+import hoomd
 from sims import HoomdColloid
 from utils import SuperEllipse, hoomd_wca, hoomd_alj
 
@@ -104,7 +93,7 @@ class BrownianDynamics(HoomdColloid):
         """In BD, the integrator object contains methods like BD and forces like pair potentials. Therefore it automatically applies the current :py:attr:`interaction` and :py:attr:`forces` to the simulation, and is thus not a settable property. 
 
         :return: The current Brownian dynamics integrator object
-        :rtype: `hoomd.md.Integrator <https://hoomd-blue.readthedocs.io/en/stable/hoomd/md/integrate/integrator.html>`_
+        :rtype: :py:class:`hoomd.md.Integrator`
         """
         if not self._is_disc:
             for t in self.types:
@@ -119,12 +108,16 @@ class BrownianDynamics(HoomdColloid):
     def methods(self):
         """
         :return: the list of current integration methods objects
-        :rtype: list of `hoomd.md.methods.Method <https://hoomd-blue.readthedocs.io/en/stable/hoomd/md/methods/method.html>`_ objects """
+        :rtype: list of :py:class:`hoomd.md.methods.Method` objects
+        """
         return self._methods
 
     @methods.setter
     def methods(self, methods:list|None):
-        """ :param methods: the integration method or methods to use :type methods: `hoomd.md.methods.Method <https://hoomd-blue.readthedocs.io/en/stable/hoomd/md/methods/method.html>`_ or a list thereof """
+        """
+        :param methods: the integration method or methods to use
+        :type methods: :py:class:`hoomd.md.methods.Method` or a list thereof
+        """
         if methods is None or len(methods)==0:
             self._methods = [self._default_BD()]
 
@@ -133,35 +126,54 @@ class BrownianDynamics(HoomdColloid):
 
     @property
     def core(self):
-        """ :return: the core particle-particle interaction object :rtype: `hoomd.md.pair.Pair <https://hoomd-blue.readthedocs.io/en/stable/hoomd/md/pair/pair.html>`_ """
+        """
+        :return: the core particle-particle interaction object
+        :rtype: :py:class:`hoomd.md.pair.Pair`
+        """
         return self._Uij
 
     @core.setter
     def core(self, pair_potential):
-        """ :param pair_potential: the core particle-particle interaction to use :type pair_potential: `hoomd.md.pair.Pair <https://hoomd-blue.readthedocs.io/en/stable/hoomd/md/pair/pair.html>`_ """
+        """
+        :param pair_potential: the core particle-particle interaction to use
+        :type pair_potential: :py:class:`hoomd.md.pair.Pair`
+        """
         assert isinstance(pair_potential, hoomd.md.pair.Pair), "interaction must be a hoomd.md.pair.Pair object"
         self._Uij = pair_potential
 
     @property
     def ideal(self) -> bool:
-        """ :return: whether the interaction range is zero for all particle pairs :rtype: bool """
+        """
+        :return: whether the simulation ignores pair interactions
+        :rtype: bool
+        """
         rcuts = np.array([self._Uij.r_cut[p1,p2] for p1,p2 in self.pairs])
         return np.all(rcuts==0.0)
 
     @ideal.setter
     def ideal(self, value: bool):
-        """ :param value: whether the simulation should use zero interaction range for all pairs :type value: bool """
+        """
+        :param value: whether the simulation ignores pair interactions
+        :type value: bool
+        """
         if not value: raise Exception("cannot set ideal to False, reset the interaction to a nonzero potential instead")
         for p1,p2 in self.pairs:
             self._Uij.r_cut[p1,p2] = 0.0
     
     @property
     def forces(self):
+        """
+        :return: the extra forces to apply during integration
+        :rtype: list of :py:class:`hoomd.md.force.Force` objects
+        """
         return self._forces
 
     @forces.setter
     def forces(self, forces:list):
-        """ :param forces: the extra forces to apply during integration :type forces: list of `hoomd.md.force.Force <https://hoomd-blue.readthedocs.io/en/stable/hoomd/md/force/force.html>`_ objects """
+        """
+        :param forces: the extra forces to apply during integration
+        :type forces: list of :py:class:`hoomd.md.force.Force` objects
+        """
         assert isinstance(forces,list) and all([isinstance(f, hoomd.md.force.Force) for f in forces]), "forces must be a list of hoomd.md.force.Force objects"
         self._forces = forces
 

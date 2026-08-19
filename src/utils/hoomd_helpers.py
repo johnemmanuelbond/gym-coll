@@ -4,19 +4,7 @@ Contains a few methods to simplify interacting with `hoomd-blue <https://hoomd-b
 """
 import numpy as np
 from scipy.spatial.distance import squareform, pdist
-
-import gsd.hoomd
-
-import importlib.util, warnings
-has_hoomd = False
-try:
-    spec = importlib.util.find_spec('hoomd')
-    if spec is not None:
-        has_hoomd=True
-except ModuleNotFoundError:
-    has_hoomd = False
-    warnings.warn("hoomd not found, sims.bd module will not work. Install hoomd-blue to use this module.")
-if has_hoomd: import hoomd
+import hoomd, gsd.hoomd
 
 from .geometry import SuperEllipse
 
@@ -39,7 +27,7 @@ def random_frame(N:int, W:float, H:float=None,
     :param rng: _description_, defaults to np.random.default_rng()
     :type rng: Generator, optional
     :return: a random configuration of `N` nonoverlapping particles within a box.
-    :rtype: `gsd.hoomd.Frame <https://gsd.readthedocs.io/en/stable/python-module-gsd.hoomd.html#gsd.hoomd.Frame>`_
+    :rtype: :py:class:`gsd.hoomd.Frame`
     """    
     #Prodcues a random configuration of N non-overlapping particles within and W x H box
 
@@ -95,8 +83,8 @@ def random_frame(N:int, W:float, H:float=None,
 def electrode_logger(k_trans:float|list|np.ndarray,
                      k_rot:float|list|np.ndarray,
                      direct:float|list|np.ndarray,
-                     electrode_gap:float,):
-    """creates a `logging <https://hoomd-blue.readthedocs.io/en/latest/hoomd/module-logging.html>`_ object so that simulations write the field configuration to `gsd <https://gsd.readthedocs.io/en/stable/index.html>`_ files. This way scripts which read these files can create :py:class:`Electrodes` objects for recreating simulation objects or rendering energy landscapes.
+                     electrode_gap:float,) -> hoomd.logging.Logger:
+    """creates a :py:class:`hoomd.logging.Logger` object so that simulations write the field configuration to `gsd <https://gsd.readthedocs.io/en/stable/index.html>`_ files. This way scripts which read these files can create :py:class:`Electrodes` objects for recreating simulation objects or rendering energy landscapes.
 
     :param k_trans: sets the translational field strengths in kT units constraining particles along each multipole axis, defaults to None
     :type k_trans: list | np.ndarray, optional
@@ -104,8 +92,8 @@ def electrode_logger(k_trans:float|list|np.ndarray,
     :type k_rot: list | np.ndarray, optional
     :param direct: sets the direction (in radians) of each multipole axis, defaults to None, defaults to None
     :type direct: list | np.ndarray, optional
-    :return: a hoomd `logging <https://hoomd-blue.readthedocs.io/en/latest/hoomd/module-logging.html>`_ object to record the field configuration
-    :rtype: `hoomd.logging.Logger <https://hoomd-blue.readthedocs.io/en/latest/hoomd/logging/logger.html#>`_
+    :return: a hoomd :py:class:`hoomd.logging.Logger` object to record the field configuration
+    :rtype: :py:class:`hoomd.logging.Logger`
     """
     k_trans = np.array([k_trans]).flatten().tolist()
     k_rot   = np.array([k_rot]).flatten().tolist()
@@ -119,9 +107,9 @@ def electrode_logger(k_trans:float|list|np.ndarray,
     return action_log
 
 
-def hoomd_dlvo(debye_length:float, energy_scale:float, buffer_size:float=0.4):
+def hoomd_dlvo(debye_length:float, energy_scale:float, buffer_size:float=0.4) -> hoomd.md.pair.DLVO:
     """
-    Creates a `hoomd.md.pair.DLVO <https://hoomd-blue.readthedocs.io/en/stable/hoomd/md/pair/dlvo.html>`_ object with the given debye length and energy scale. The DLVO interaction is a screened electrostatic potential for simulating charged colloids in an electrolyte. This interation has the form:
+    Creates a :py:class:`hoomd.md.pair.DLVO` object with the given debye length and energy scale. The DLVO interaction is a screened electrostatic potential for simulating charged colloids in an electrolyte. This interation has the form:
 
     .. math::
         U(r) = A e^{-\\kappa (r-2a)}
@@ -134,8 +122,8 @@ def hoomd_dlvo(debye_length:float, energy_scale:float, buffer_size:float=0.4):
     :type energy_scale: float
     :param buffer_size: The buffer size for the neighbor list, defaults to 0.4
     :type buffer_size: float, optional
-    :return: A hoomd `md.pair.DLVO` object
-    :rtype: hoomd.md.pair.Pair
+    :return: A hoomd :py:class:`hoomd.md.pair.DLVO` object
+    :rtype: hoomd.md.pair.DLVO
     """    
 
     cell = hoomd.md.nlist.Cell(buffer=buffer_size)
@@ -146,9 +134,9 @@ def hoomd_dlvo(debye_length:float, energy_scale:float, buffer_size:float=0.4):
     return dlvo
 
 
-def capped_dlvo(debye_length:float, energy_scale:float, buffer_size:float=0.4, force_cap:float|None=None):
+def capped_dlvo(debye_length:float, energy_scale:float, buffer_size:float=0.4, force_cap:float|None=None) -> hoomd.md.pair.Table:
     """
-    Creates a `hoomd.md.pair.Table <https://hoomd-blue.readthedocs.io/en/stable/hoomd/md/pair/table.html>`_ object with the given debye length and energy scale. The DLVO interaction is a screened electrostatic potential for simulating charged colloids in an electrolyte, but sometimes generates impractically large forces and thus displacements. Therefore, this method creates a tabular potential where high forces are clipped to keep simulations running smoothely. However, using this method may result in occasional overlapping particles.
+    Creates a :py:class:`hoomd.md.pair.Table` object with the given debye length and energy scale. The DLVO interaction is a screened electrostatic potential for simulating charged colloids in an electrolyte, but sometimes generates impractically large forces and thus displacements. Therefore, this method creates a tabular potential where high forces are clipped to keep simulations running smoothely. However, using this method may result in occasional overlapping particles.
     
     :param debye_length: The debye length in simulation units
     :type debye_length: float
@@ -158,8 +146,8 @@ def capped_dlvo(debye_length:float, energy_scale:float, buffer_size:float=0.4, f
     :type buffer_size: float, optional
     :param force_cap: the maximum particle-particle force particles may experience in a simulation, defaults to a force which results in only displacements as big as fifteen debye lengths (given the diffusivity is 0.25 and the timestep is 1e-3).
     :type force_cap: float | None, optional
-    :return: A hoomd `md.pair.Table` object
-    :rtype: hoomd.md.pair.Pair
+    :return: A hoomd :py:class:`hoomd.md.pair.Table` object
+    :rtype: hoomd.md.pair.Table
     """    
 
     cell = hoomd.md.nlist.Cell(buffer=buffer_size)
@@ -181,8 +169,9 @@ def capped_dlvo(debye_length:float, energy_scale:float, buffer_size:float=0.4, f
     return dlvo
 
 
-def hoomd_wca(length_scale:float, energy_scale:float, buffer_size:float=0.4):
-    """Creates a `hoomd.md.pair.LJ <https://hoomd-blue.readthedocs.io/en/stable/hoomd/md/pair/lj.html>`_ object with the given length scale and energy scale. This Lennard-Jones interaction is trucated to the Weeks-Chandler-Anderson form for purely repuslive particles. This interaction has the form:
+
+def hoomd_wca(length_scale:float, energy_scale:float, buffer_size:float=0.4) -> hoomd.md.pair.LJ:
+    """Creates a :py:class:`hoomd.md.pair.LJ` object with the given length scale and energy scale. This Lennard-Jones interaction is trucated to the Weeks-Chandler-Anderson form for purely repuslive particles. This interaction has the form:
 
     .. math::
         U(r) = 4\\varepsilon\\bigg[(\\sigma/r)^{{12}} - (\\sigma/r)^6 + 1\\bigg]
@@ -193,8 +182,8 @@ def hoomd_wca(length_scale:float, energy_scale:float, buffer_size:float=0.4):
     :type energy_scale: float
     :param buffer_size: the buffer size for the neighbor list, defaults to 0.4
     :type buffer_size: float, optional
-    :return: a `hoomd.md.pair.LJ <https://hoomd-blue.readthedocs.io/en/stable/hoomd/md/pair/lj.html>`_ object with the given length scale and energy scale
-    :rtype: hoomd.md.pair.LJ
+    :return: a :py:class:`hoomd.md.pair.LJ` object with the given length scale and energy scale
+    :rtype: :py:class`hoomd.md.pair.LJ`
     """    
     
     nonideal = length_scale!=0 and energy_scale!=0
@@ -205,9 +194,8 @@ def hoomd_wca(length_scale:float, energy_scale:float, buffer_size:float=0.4):
 
     return wca
 
-
-def hoomd_alj(shape:SuperEllipse, energy_scale:float, buffer_size:float=0.4, **kwargs):
-    """Creates a `hoomd.md.pair.aniso.ALJ <https://hoomd-blue.readthedocs.io/en/stable/hoomd/md/pair/aniso.html#hoomd.md.pair.aniso.ALJ>`_ object with the given shape and energy scale. The Anisotropic Lennard-Jones interaction is a generalization of the Lennard-Jones interaction to arbitrary shapes. This interaction has the form:
+def hoomd_alj(shape:SuperEllipse, energy_scale:float, buffer_size:float=0.4, **kwargs) -> hoomd.md.pair.aniso.ALJ:
+    """Creates a :py:class:`hoomd.md.pair.aniso.ALJ` object with the given shape and energy scale. The Anisotropic Lennard-Jones interaction is a generalization of the Lennard-Jones interaction to arbitrary shapes. This interaction has the form:
 
     .. math::
         U(r) = 4\\varepsilon\\bigg[(\\sigma_i\\sigma_j/r^2)^{{6}} - (\\sigma_i\\sigma_j/r^2)^3 + 1\\bigg]
@@ -218,8 +206,8 @@ def hoomd_alj(shape:SuperEllipse, energy_scale:float, buffer_size:float=0.4, **k
     :type energy_scale: float
     :param buffer_size: the buffer size for the neighbor list, defaults to 0.4
     :type buffer_size: float, optional
-    :return: a `hoomd.md.pair.aniso.ALJ <https://hoomd-blue.readthedocs.io/en/stable/hoomd/md/pair/aniso.html#hoomd.md.pair.aniso.ALJ>`_ object with the given shape and energy scale
-    :rtype: hoomd.md.pair.aniso.ALJ
+    :return: a :py:class:`hoomd.md.pair.aniso.ALJ` object with the given shape and energy scale
+    :rtype: :py:class:`hoomd.md.pair.aniso.ALJ`
     """    
 
     if not hasattr(shape, 'vertices'):
@@ -257,7 +245,7 @@ def hoomd_alj(shape:SuperEllipse, energy_scale:float, buffer_size:float=0.4, **k
 
     return alj
 
-def hpmc_dipoles(shape:SuperEllipse, energy_scale:float):
+def hpmc_dipoles(shape:SuperEllipse, energy_scale:float) -> tuple[hoomd.hpmc.pair.AngularStep, hoomd.hpmc.pair.AngularStep]:
     """
     Creates a pair of dipole interactions for the given shape and energy scale.
 
@@ -265,8 +253,8 @@ def hpmc_dipoles(shape:SuperEllipse, energy_scale:float):
     :type shape: :py:class:`SuperEllipse <utils.geometry.SuperEllipse>`
     :param energy_scale: the energy scale of the dipole interactions in kT units
     :type energy_scale: float
-    :return: a tuple of `hoomd.hpmc.pair.AngularStep <https://hoomd-blue.readthedocs.io/en/latest/hoomd/hpmc/pair/angularstep.html>`_ objects which represent the dipole interactions
-    :rtype: tuple[hoomd.hpmc.pair.AngularStep, hoomd.hpmc.pair.AngularStep]
+    :return: a tuple of :py:class:`hoomd.hpmc.pair.AngularStep` objects which represent the dipole interactions
+    :rtype: tuple[:py:class:`hoomd.hpmc.pair.AngularStep`, :py:class:`hoomd.hpmc.pair.AngularStep`]
     """
 
     ax, ay = shape.ax, shape.ay
@@ -291,27 +279,56 @@ def hpmc_dipoles(shape:SuperEllipse, energy_scale:float):
 
 
 class SwitchEta(hoomd.custom.Action):
-    def __init__(self, eta_bins:np.ndarray, shape:SuperEllipse, periodic=[False, False, False]):
+    """
+    WIP DOCSTRING
+
+    :param eta_bins: local area fraction boundaries used to sort particles
+    :type eta_bins: array-like
+    :param shape: The shape of each particles
+    :type shape: :py:class:`SuperEllipse`
+    :param periodic: Whether the system is periodic in each dimension [x, y, z], defaults to False for each
+    :type periodic: list[bool]
+    """
+
+    def __init__(self, eta_bins:np.ndarray|list, shape:SuperEllipse, periodic=[False, False, False]):
+        """
+        Constructor
+        """
         self.shape = shape
-        self._bdry = eta_bins
+        self._bdry = np.array(eta_bins)
+        self._per = periodic
 
     def attach(self, simulation):
+        """Attaches this action to a simulation object
+
+        :param simulation: The simulation to attach to
+        :type simulation: :py:class:`hoomd.Simulation`
+        """
         self._state = simulation.state
         self._comm = simulation.device.communicator
         self._Nt = len(self._state.particle_types)
 
     @property
-    def shape(self):
+    def shape(self) -> SuperEllipse:
+        """
+
+        """
         return self._s
 
     @shape.setter
     def shape(self, shape:SuperEllipse):
+        """
+
+        """
         if not hasattr(shape, 'outsphere'): shape.contact_vertices(n_verts=16, require_corners=True)
         self._s = shape
         self._d = shape.outsphere
         self._Ap = shape.area
     
     def local_eta(self, pts, box):
+        """
+
+        """
         dists = squareform(pdist(pts))
         ncut = 2.6*self._d
         nnei_inner = np.sum(dists<(ncut-self._d/2), axis=-1)
@@ -321,6 +338,8 @@ class SwitchEta(hoomd.custom.Action):
         return etas
 
     def act(self, timestep):
+        """
+        """
             
         with self._state.cpu_local_snapshot as snap:
             pts = snap.particles.position

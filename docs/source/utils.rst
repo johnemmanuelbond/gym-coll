@@ -18,10 +18,3 @@ hoomd_helpers submodule
     :undoc-members:
     :show-inheritance:
 
-gym_spaces submodule
---------------------
-
-.. automodule:: utils.gym_spaces
-    :members:
-    :undoc-members:
-    :show-inheritance:
