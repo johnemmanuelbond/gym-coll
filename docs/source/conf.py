@@ -31,6 +31,7 @@ extensions = extensions = [
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3/', None),
     'hoomd': ('https://hoomd-blue.readthedocs.io/en/stable/', None),
+    'gsd': ('https://gsd.readthedocs.io/en/stable/', None),
 }
 
 templates_path = ['_templates']

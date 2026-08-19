@@ -99,7 +99,7 @@ class DynamicMonteCarlo(HoomdColloid):
         """
         self._DR = da**2/(6*self.dt)
 
-    def _shape_integrator(self) -> hoomd.hpmc.integrate.Integrator:
+    def _shape_integrator(self) -> hoomd.hpmc.integrate.HPMCIntegrator:
         """Return a default HPMC integrator object with the current step sizes."""
         if self._is_disc:
             mc = hoomd.hpmc.integrate.Sphere(nselect=2, translation_move_probability=1.0,default_d=self.dx)
@@ -108,10 +108,10 @@ class DynamicMonteCarlo(HoomdColloid):
         return mc
 
     @property
-    def integrator(self) -> hoomd.hpmc.integrate.Integrator:
+    def integrator(self) -> hoomd.hpmc.integrate.HPMCIntegrator:
         """
         :return: the current Monte Carlo integrator object
-        :rtype: :py:class:`hoomd.hpmc.integrate.Integrator`
+        :rtype: :py:class:`hoomd.hpmc.integrate.HPMCIntegrator`
         """
         mc = self._hpmc
 
@@ -132,10 +132,10 @@ class DynamicMonteCarlo(HoomdColloid):
         return mc
 
     @integrator.setter
-    def integrator(self, hpmc: hoomd.hpmc.integrate.Integrator|None):
+    def integrator(self, hpmc: hoomd.hpmc.integrate.HPMCIntegrator|None):
         """
         :param value: the Monte Carlo integrator to use
-        :type value: :py:class:`hoomd.hpmc.integrate.Integrator`
+        :type value: :py:class:`hoomd.hpmc.integrate.HPMCIntegrator`
         """
         if hpmc is None:
             self._hpmc = self._shape_integrator()

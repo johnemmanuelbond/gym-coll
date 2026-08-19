@@ -303,7 +303,7 @@ class HoomdColloid(Simbase):
         """Add a HOOMD updater to the simulation.
 
         :param updater: a HOOMD updater object that modifies the simulation state
-        :type updater: :py:class:`hoomd.update.Update`
+        :type updater: :py:class:`hoomd.operation.Updater`
         """
         self._sim.operations.updaters.append(updater)
 
@@ -335,7 +335,6 @@ class HoomdColloid(Simbase):
         :type mode: str, optional
         """
         super().reset()
-        assert has_hoomd, "hoomd-blue not found, install hoomd-blue to use this module."
         self._time = 0
 
         #remove all writers to close out current gsd file so that subsequent steps continue to append frames.
