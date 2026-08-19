@@ -7,7 +7,7 @@ from scipy.spatial.distance import squareform, pdist
 
 import gsd.hoomd
 
-import importlib.util
+import importlib.util, warnings
 has_hoomd = False
 try:
     spec = importlib.util.find_spec('hoomd')
@@ -15,7 +15,7 @@ try:
         has_hoomd=True
 except ModuleNotFoundError:
     has_hoomd = False
-    raise Warning("hoomd not found, sims.bd module will not work. Install hoomd-blue to use this module.")
+    warnings.warn("hoomd not found, sims.bd module will not work. Install hoomd-blue to use this module.")
 if has_hoomd: import hoomd
 
 from .geometry import SuperEllipse
