@@ -3,10 +3,10 @@
 Contains a few methods to simplify interacting with `hoomd-blue <https://hoomd-blue.readthedocs.io/en/latest>`_. Includes a class to represent electrode geometries.
 """
 import numpy as np
-from scipy.spatial.distance import squareform, pdist
+from scipy.spatial.distance import squareform, pdist, cdist
 import hoomd, gsd.hoomd
 
-from .geometry import SuperEllipse
+from .geometry import SuperEllipse, hoomd_box_to_matrix
 
 
 def random_frame(N:int, W:float, H:float=None,
@@ -325,12 +325,22 @@ class SwitchEta(hoomd.custom.Action):
         self._d = shape.outsphere
         self._Ap = shape.area
     
-    def local_eta(self, pts, box):
+    def local_eta(self, pts, basis):
         """
 
         """
-        dists = squareform(pdist(pts))
         ncut = 2.6*self._d
+        pts_padded = pts.copy()
+        for i in np.where(self._per)[0]:
+            v    = basis[i]
+            L    = np.linalg.norm(v)
+            proj = pts_padded @ v/L
+            hi   = proj > (L/2 - 2*ncut)
+            lo   = proj < (-L/2 + 2*ncut)
+
+            pts_padded = np.concatenate((pts_padded, pts_padded[hi] - v, pts_padded[lo] + v), axis=0)
+
+        dists = cdist(pts, pts_padded)
         nnei_inner = np.sum(dists<(ncut-self._d/2), axis=-1)
         nnei_outer = np.sum(dists<(ncut+self._d/2), axis=-1)
         nnei = nnei_inner + 0.5*(nnei_outer - nnei_inner)
@@ -343,8 +353,8 @@ class SwitchEta(hoomd.custom.Action):
             
         with self._state.cpu_local_snapshot as snap:
             pts = snap.particles.position
-            box = snap.local_box.L
-            etas = self.local_eta(pts, box)
+            basis = snap.local_box.to_matrix().T
+            etas = self.local_eta(pts, basis)
             type_idx = np.digitize(etas, self._bdry).clip(1, self._Nt) - 1
             snap.particles.typeid = type_idx
 

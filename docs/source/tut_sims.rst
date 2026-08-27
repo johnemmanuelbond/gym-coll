@@ -18,7 +18,7 @@ Below we've included a snippet of the SMRL :doc:`documentation <modules>`. This 
 
 .. autoclass:: sims.base.Simbase
     :members: run, reset
-    :undoc-members: elapsed
+    :exclude-members: elapsed
     :no-index:
 
 
