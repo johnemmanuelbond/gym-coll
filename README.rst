@@ -42,7 +42,7 @@ After installing prerequesites, clone the git repository:
 
 .. code-block:: bash
 
-   $ git clone https://github.com/dayakaran/SMRL.git path_to_repo
+   $ git clone https://github.com/johnemmanuelbond/gym-coll.git path_to_repo
 
 Users may install the repository into a conda environment using :code:`conda develop`
 

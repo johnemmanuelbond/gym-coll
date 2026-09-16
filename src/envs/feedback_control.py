@@ -146,7 +146,7 @@ class Discrete(gym.Env):
 
         :param action: the index of the desired action in the action space
         :type action: int | tuple | ndarray
-        :return: the environment's position in obsevration space, the reward for that position, whether the environment has terminated, whether the evironment has truncated, a dictionary of additional information
+        :return: the environment's position in observation space, the reward for that position, whether the environment has terminated, whether the evironment has truncated, a dictionary of additional information
         :rtype: tuple[int|ndarray,float,bool,bool,dict]
         """        
         self.sim.run(self._ut, *np.array([self._A[action]]).flatten())
@@ -276,7 +276,7 @@ class Semidiscrete(gym.Env):
 
         :param action: the index of the desired action in the action space
         :type action: int | tuple | np.ndarray
-        :return: the environment's position in obsevration space, the reward for that position, whether the environment has terminated, whether the evironment has truncated, and a dictionary of additional information
+        :return: the environment's position in observation space, the reward for that position, whether the environment has terminated, whether the evironment has truncated, and a dictionary of additional information
         :rtype: tuple[int,float,bool,bool,dict]
         """        
         self.sim.run(self._ut, *np.array([self._A[action]]).flatten())
@@ -401,7 +401,7 @@ class Continuous(gym.Env):
 
         :param action: the desired action
         :type action: scalar, array-like
-        :return: the environment's position in obsevration space, the reward for that position, whether the environment has terminated, whether the evironment has truncated, and a dictionary of additional information
+        :return: the environment's position in observation space, the reward for that position, whether the environment has terminated, whether the evironment has truncated, and a dictionary of additional information
         :rtype: tuple[int,float,bool,bool,dict]
         """
         assert self.action_space.contains(action), "Action is not in action space"

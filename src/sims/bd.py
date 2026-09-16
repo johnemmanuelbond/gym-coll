@@ -179,19 +179,22 @@ class BrownianDynamics(HoomdColloid):
 
     def run(self,
             time:float,
-            *args):
+            *args,
+            flush:bool = False):
         """Advance the simulation for a short burst.
 
         :param time: runtime in simulation units for this burst
         :type time: scalar
         :param args: additional arguments passed to the simulation
         :type args: tuple
+        :param flush: whether to flush any writers after this function call, defaults to False
+        :type flush: bool
         """
 
         if len(self._sim.operations.writers)>0:
             if not self._is_disc: self.logger.add(self._Uij,quantities=['type_shapes'])
 
-        super().run(time, *args)
+        super().run(time, *args, flush=flush)
 
 
 if __name__ == "__main__":

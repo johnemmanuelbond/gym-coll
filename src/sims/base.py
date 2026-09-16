@@ -374,16 +374,26 @@ class HoomdColloid(Simbase):
                                     mode=mode,
                                     dynamic=['property','momentum','attribute'])
             self._sim.operations.writers.append(gsd_writer)
+    
+    def flush(self):
+        """
+        Flush any writers attached to the simulation
+        """
+        for i in range(len(self._sim.operations.writers)):
+            self._sim.operations.writers[i].flush()
 
     def run(self,
             time:float,
-            *args):
+            *args,
+            flush:bool = False):
         """Advance the simulation for a short burst.
 
         :param time: runtime in simulation units for this burst
         :type time: scalar
         :param args: additional arguments passed to the simulation
         :type args: tuple
+        :param flush: whether to flush any writers after this function call, defaults to False
+        :type flush: bool
         """
         super().run(time, *args)
 
@@ -398,8 +408,7 @@ class HoomdColloid(Simbase):
         self._sim.operations.integrator = self.integrator
         simstep = int(time/self._dt)
         self._sim.run(simstep)
-        if len(self._sim.operations.writers)>0:
-            self._sim.operations.writers[0].flush()
+        if flush: self.flush()
         self._sim.operations.integrator = None
 
 

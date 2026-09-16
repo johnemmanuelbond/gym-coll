@@ -118,6 +118,17 @@ class GSDWrapper(gym.Wrapper):
         self._ep+=1
         return obs, info
 
+def step(self, action):
+        """steps the environment forward under prescribed action. If a perticle has left the simulation box return a highly negative reward and truncate the episode.
+
+        :param action: an action to pass backwards to the wrapped environment 
+        :return: the environment's position in observation space, the reward for that position (with out-of-box considerations), whether the environment has terminated, whether the evironment has truncated, a dictionary of additional information
+        :rtype: tuple[int|ndarray,float,bool,bool,dict]
+        """        
+        obs, reward, term, trunc, info = self.env.step(action)
+        self.env.unwrapped.sim.flush()
+        return obs, reward, term, trunc, info
+
 
 class OutOfBoxWrapper(gym.Wrapper):
     """For use with :py:mod:`envs.feedback_control`, this wrapper will end an episode early and return a large negative reward if the environment's underlying simulation allows a particle to leave the simulation box. This is unphysical in experiment.
@@ -140,7 +151,7 @@ class OutOfBoxWrapper(gym.Wrapper):
         """steps the environment forward under prescribed action. If a perticle has left the simulation box return a highly negative reward and truncate the episode.
 
         :param action: an action to pass backwards to the wrapped environment 
-        :return: the environment's position in obsevration space, the reward for that position (with out-of-box considerations), whether the environment has terminated, whether the evironment has truncated, a dictionary of additional information
+        :return: the environment's position in observation space, the reward for that position (with out-of-box considerations), whether the environment has terminated, whether the evironment has truncated, a dictionary of additional information
         :rtype: tuple[int|ndarray,float,bool,bool,dict]
         """        
         obs, reward, term, trunc, info = self.env.step(action)
