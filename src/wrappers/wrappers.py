@@ -35,7 +35,10 @@ class HistoryWrapper(gym.Wrapper):
         :return: The position in observation space of the environment post reset, and a dictionary of additional information
         :rtype: tuple[float,dict]
         """        
-        self._history = []
+        self._t_elapsed  = []
+        self._St = []
+        self._At = []
+        self._Rt = []
         obs,info =  self.env.reset(seed=seed, options=options)
         act = np.array([self.env.action_space.sample()]).flatten()*np.nan
         self._t_elapsed.append(info['elapsed_time'])
