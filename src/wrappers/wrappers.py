@@ -18,6 +18,7 @@ class HistoryWrapper(gym.Wrapper):
         """
         super().__init__(env)
         self.env=env
+        self._t_elapsed  = []
         self._St = []
         self._At = []
         self._Rt = []
@@ -37,14 +38,18 @@ class HistoryWrapper(gym.Wrapper):
         self._history = []
         obs,info =  self.env.reset(seed=seed, options=options)
         act = np.array([self.env.action_space.sample()]).flatten()*np.nan
+        self._t_elapsed.append(info['elapsed_time'])
         self._St.append(obs)
         self._At.append(act)
-        self._Rt.append(np.nan)
+        self._Rt.append(np.nan) 
         # self._history.append((self.env.unwrapped.sim.elapsed, *obs, *act, np.nan))
+
         info = dict(info)
+        info['t'] = np.array(self._t_elapsed, dtype=np.float32)
         info['St'] = np.array(self._St,dtype=np.float32)
         info['At'] = np.array(self._At,dtype=np.float32)
         info['Rt'] = np.array(self._Rt,dtype=np.float32)
+
         return obs, info
 
     def step(self, action):
@@ -57,11 +62,13 @@ class HistoryWrapper(gym.Wrapper):
         """
         obs, reward, term, trunc, info = self.env.step(action)
         act = np.array([action]).flatten()
+        self._t_elapsed.append(info['elapsed_time'])
         self._St.append(obs)
         self._At.append(act)
         self._Rt.append(reward)
         # self._history.append((self.env.unwrapped.sim.elapsed, *obs, *act, reward))
         info = dict(info)
+        info['t']  = np.array(self._t_elapsed, dtype=np.float32)
         info['St'] = np.array(self._St,dtype=np.float32)
         info['At'] = np.array(self._At,dtype=np.float32)
         info['Rt'] = np.array(self._Rt,dtype=np.float32)
