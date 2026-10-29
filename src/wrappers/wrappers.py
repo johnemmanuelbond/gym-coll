@@ -18,7 +18,9 @@ class HistoryWrapper(gym.Wrapper):
         """
         super().__init__(env)
         self.env=env
-        self._history = []
+        self._St = []
+        self._At = []
+        self._Rt = []
     
     def reset(self,seed=None,options=dict()):
         """
@@ -34,15 +36,20 @@ class HistoryWrapper(gym.Wrapper):
         """        
         self._history = []
         obs,info =  self.env.reset(seed=seed, options=options)
-        act = np.array([self.env.action_space.sample()]).flatten()
-        self._history.append((self.env.unwrapped.sim.elapsed, *obs, *act))
+        act = np.array([self.env.action_space.sample()]).flatten()*np.nan
+        self._St.append(obs)
+        self._At.append(act)
+        self._Rt.append(np.nan)
+        # self._history.append((self.env.unwrapped.sim.elapsed, *obs, *act, np.nan))
         info = dict(info)
-        info['history'] = np.array(self._history,dtype=np.float32)
+        info['St'] = np.array(self._St,dtype=np.float32)
+        info['At'] = np.array(self._At,dtype=np.float32)
+        info['Rt'] = np.array(self._Rt,dtype=np.float32)
         return obs, info
 
     def step(self, action):
         """
-        steps the environment forwar and saves the elapsed time and current environment state to the `info` dictionary.
+        steps the environment forward and saves the elapsed time and current environment state to the `info` dictionary.
 
         :param action: an action to pass backwards to the wrapped environment 
         :return: the environment's position in obsevration space, the reward for that position, whether the environment has terminated, whether the evironment has truncated, a dictionary of additional information
@@ -50,9 +57,14 @@ class HistoryWrapper(gym.Wrapper):
         """
         obs, reward, term, trunc, info = self.env.step(action)
         act = np.array([action]).flatten()
-        self._history.append((self.env.unwrapped.sim.elapsed, *obs, *act))
+        self._St.append(obs)
+        self._At.append(act)
+        self._Rt.append(reward)
+        # self._history.append((self.env.unwrapped.sim.elapsed, *obs, *act, reward))
         info = dict(info)
-        info['history'] = np.array(self._history,dtype=np.float32)
+        info['St'] = np.array(self._St,dtype=np.float32)
+        info['At'] = np.array(self._At,dtype=np.float32)
+        info['Rt'] = np.array(self._Rt,dtype=np.float32)
         return obs, reward, term, trunc, info
 
 class GSDWrapper(gym.Wrapper):
