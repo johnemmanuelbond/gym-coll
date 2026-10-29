@@ -34,7 +34,8 @@ class HistoryWrapper(gym.Wrapper):
         """        
         self._history = []
         obs,info =  self.env.reset(seed=seed, options=options)
-        self._history.append((self.env.unwrapped.sim.elapsed, *obs))
+        act = np.array([self.env.action_space.sample()]).flatten()
+        self._history.append((self.env.unwrapped.sim.elapsed, *act, *obs))
         info = dict(info)
         info['history'] = np.array(self._history,dtype=np.float32)
         return obs, info
@@ -48,7 +49,8 @@ class HistoryWrapper(gym.Wrapper):
         :rtype: tuple[int|ndarray,float,bool,bool,dict]
         """
         obs, reward, term, trunc, info = self.env.step(action)
-        self._history.append((self.env.unwrapped.sim.elapsed, *obs))
+        act = np.array([action]).flatten()
+        self._history.append((self.env.unwrapped.sim.elapsed, *act, *obs))
         info = dict(info)
         info['history'] = np.array(self._history,dtype=np.float32)
         return obs, reward, term, trunc, info
