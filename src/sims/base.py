@@ -299,7 +299,7 @@ class HoomdColloid(Simbase):
         """
         raise NotImplementedError("integrator property must be implemented in subclasses")
 
-    def add_updater(self, updater:hoomd.update.Update):
+    def add_updater(self, updater:hoomd.operation.Updater):
         """Add a HOOMD updater to the simulation.
 
         :param updater: a HOOMD updater object that modifies the simulation state
